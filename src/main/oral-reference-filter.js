@@ -200,29 +200,12 @@
                 ? alignement.divergentes
                 : new Set();
 
-            if (positionsDivergentes.size === 0) {
-                const fauxPositifsAnnules = Array.isArray(resultatAnalyse.erreurs) ? resultatAnalyse.erreurs.length : 0;
-                const motsSansErreurs = resultatAnalyse.mots.map((mot) => {
-                    if (!mot) return mot;
-                    return { ...mot, erreurs: [] };
-                });
-
-                this.statutFiltrageOral = {
-                    actif: true,
-                    correspondanceExacte: true,
-                    fauxPositifsAnnules,
-                    divergences: 0
-                };
-
-                return {
-                    ...resultatAnalyse,
-                    mots: motsSansErreurs,
-                    erreurs: []
-                };
-            }
-
             const erreursOriginales = Array.isArray(resultatAnalyse.erreurs) ? resultatAnalyse.erreurs : [];
             const erreursFiltrees = erreursOriginales.filter((erreur) => {
+                if (!erreur) return false;
+                if (erreur.type === 'majuscule_phrase' || erreur.type === 'ponctuation_finale') {
+                    return true;
+                }
                 const indexes = this.extraireIndexErreur(erreur);
                 if (!indexes.length) return true;
                 const uniquementPositionsIdentiques = indexes.every((index) => !positionsDivergentes.has(index));
@@ -232,7 +215,11 @@
             const fauxPositifsAnnules = erreursOriginales.length - erreursFiltrees.length;
             const motsFiltres = (Array.isArray(resultatAnalyse.mots) ? resultatAnalyse.mots : []).map((mot) => {
                 if (!mot || !Array.isArray(mot.erreurs)) return mot;
-                const erreursMotFiltrees = mot.erreurs.filter((erreur) => erreursFiltrees.includes(erreur));
+                const erreursMotFiltrees = mot.erreurs.filter((erreur) => {
+                    if (!erreur) return false;
+                    if (erreur.type === 'majuscule_phrase' || erreur.type === 'ponctuation_finale') return true;
+                    return erreursFiltrees.includes(erreur);
+                });
                 return { ...mot, erreurs: erreursMotFiltrees };
             });
 
@@ -242,28 +229,39 @@
                 erreurs: erreursFiltrees
             };
 
-            const resultatAvecErreursReference = this.ajouterErreursReferenceOraleManquantes(
-                resultatFiltre,
-                tokensSaisis,
-                tokensReference,
-                positionsDivergentes,
-                omissions
-            );
+            let resultatFinal = resultatFiltre;
+            if (positionsDivergentes.size > 0) {
+                resultatFinal = this.ajouterErreursReferenceOraleManquantes(
+                    resultatFiltre,
+                    tokensSaisis,
+                    tokensReference,
+                    positionsDivergentes,
+                    omissions
+                );
+            }
 
-            const resultatAvecPonctuation = this.ajouterErreurPonctuationFinaleReference(
-                resultatAvecErreursReference, phraseSaisie, phraseReference
-            );
+            if (typeof this.ajouterErreurMajusculeReference === 'function') {
+                resultatFinal = this.ajouterErreurMajusculeReference(resultatFinal, phraseSaisie, phraseReference);
+            }
 
-            const resultatSansDoublonPonctuation = this.dedupliquerErreursPonctuationFinale(resultatAvecPonctuation);
+            if (typeof this.ajouterErreurPonctuationFinaleReference === 'function') {
+                resultatFinal = this.ajouterErreurPonctuationFinaleReference(resultatFinal, phraseSaisie, phraseReference);
+            }
+
+            if (typeof this.dedupliquerErreursPonctuationFinale === 'function') {
+                resultatFinal = this.dedupliquerErreursPonctuationFinale(resultatFinal);
+            }
+
+            const aErreurs = Array.isArray(resultatFinal.erreurs) && resultatFinal.erreurs.length > 0;
 
             this.statutFiltrageOral = {
                 actif: true,
-                correspondanceExacte: false,
+                correspondanceExacte: !aErreurs && positionsDivergentes.size === 0,
                 fauxPositifsAnnules,
                 divergences: positionsDivergentes.size,
                 omissionsDetectees: omissions.length
             };
-            return resultatSansDoublonPonctuation;
+            return resultatFinal;
         }
     };
 

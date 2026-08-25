@@ -567,6 +567,52 @@ ajouterErreurPonctuationFinaleReference(resultatAnalyse, phraseSaisie, phraseRef
     };
 }
 
+ajouterErreurMajusculeReference(resultatAnalyse, phraseSaisie, phraseReference) {
+    if (!resultatAnalyse || !Array.isArray(resultatAnalyse.mots) || resultatAnalyse.mots.length === 0) {
+        return resultatAnalyse;
+    }
+
+    const existeDeja = (resultatAnalyse.erreurs || []).some((erreur) => erreur && erreur.type === 'majuscule_phrase');
+    if (existeDeja) {
+        return resultatAnalyse;
+    }
+
+    const premierIndex = resultatAnalyse.mots.findIndex((m) => m && m.texte && !/^[.,;:!?«»()\[\]{}\-–—]+$/.test(m.texte));
+    if (premierIndex < 0) return resultatAnalyse;
+
+    const premierMot = resultatAnalyse.mots[premierIndex];
+    const texte = premierMot && premierMot.texte ? premierMot.texte : '';
+    if (!texte || !/^[a-zàâäçéèêëîïôöûùüÿœæ]/.test(texte)) {
+        return resultatAnalyse;
+    }
+
+    const correction = texte.charAt(0).toUpperCase() + texte.slice(1);
+    const erreurMajuscule = {
+        type: 'majuscule_phrase',
+        position: premierIndex,
+        indexDebut: premierIndex,
+        indexFin: premierIndex,
+        mot: texte,
+        correction,
+        explication: 'Une phrase commence par une majuscule.',
+        regle: 'On met toujours une majuscule au début d’une phrase.',
+        memo: 'Début de phrase = majuscule obligatoire.',
+        titreAide: 'Majuscule en début de phrase'
+    };
+
+    const nouveauxMots = resultatAnalyse.mots.map((m, idx) => {
+        if (idx !== premierIndex) return m;
+        const erreursMot = Array.isArray(m.erreurs) ? [...m.erreurs, erreurMajuscule] : [erreurMajuscule];
+        return { ...m, erreurs: erreursMot };
+    });
+
+    return {
+        ...resultatAnalyse,
+        mots: nouveauxMots,
+        erreurs: [...(resultatAnalyse.erreurs || []), erreurMajuscule]
+    };
+}
+
 enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []) {
     if (index < 0 || !Array.isArray(tokensReference) || tokensReference.length === 0) return null;
     const base1 = this.normaliserTokenComparaison(motSaisi);

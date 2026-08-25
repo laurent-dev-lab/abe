@@ -178,7 +178,13 @@
             panel.appendChild(btnLecture);
             panel.appendChild(btnRandom);
             panel.appendChild(btnReset);
-            document.body.appendChild(panel);
+
+            const footer = document.querySelector('.footer');
+            if (footer && footer.parentNode) {
+                footer.parentNode.insertBefore(panel, footer);
+            } else {
+                document.body.appendChild(panel);
+            }
 
             this.panelLecteur = panel;
             this.btnLecture = btnLecture;

@@ -119,4 +119,84 @@ describe('Punctuation & Capitals - Détection et Double Faute', () => {
         assert.strictEqual(fakeTile.textContent, '.', 'Le texte de la tuile doit être le point');
         assert.ok(ctx.estErreurCorrigee(ctx.erreurActuelle), 'L\'erreur doit être marquée comme corrigée');
     });
+
+    it('détecte systématiquement l\'absence de majuscule initiale en mode dictée orale (correspondance exacte par ailleurs)', () => {
+        require('../src/main/oral-pedagogy.js');
+        require('../src/main/oral-reference-filter.js');
+        require('../src/main/oral-alignment.js');
+
+        const oralPedagogy = globalThis.AbeMainOralPedagogy;
+        const oralFilter = globalThis.AbeMainOralReferenceFilter;
+        const oralAlignment = globalThis.AbeMainOralAlignment;
+
+        const phraseReference = "Les élèves écoutent le professeur dans la classe.";
+        const phraseSaisieSansMajuscule = "les élèves écoutent le professeur dans la classe.";
+
+        const fakeApp = {
+            obtenirPhraseReferenceOrale: () => phraseReference,
+            obtenirEntreeCorpusDetailleReference: () => null,
+            analyseur: {
+                tokeniser: (str) => str.split(/\s+/).map((t, idx) => ({ texte: t, position: idx, erreurs: [] }))
+            },
+            calculerAlignementLexical: oralAlignment.calculerAlignementLexical,
+            extraireTokensLexicauxAvecMeta: oralPedagogy.extraireTokensLexicauxAvecMeta,
+            normaliserTokenComparaison: oralPedagogy.normaliserTokenComparaison,
+            extraireIndexErreur: () => [0],
+            ajouterErreurMajusculeReference: oralPedagogy.ajouterErreurMajusculeReference,
+            ajouterErreurPonctuationFinaleReference: oralPedagogy.ajouterErreurPonctuationFinaleReference,
+            dedupliquerErreursPonctuationFinale: (res) => res,
+            extrairePonctuationFinale: oralPedagogy.extrairePonctuationFinale
+        };
+
+        const resultatInitial = {
+            mots: [
+                { texte: 'les', erreurs: [{ type: 'majuscule_phrase', position: 0, mot: 'les', correction: 'Les' }] },
+                { texte: 'élèves', erreurs: [] },
+                { texte: 'écoutent', erreurs: [] },
+                { texte: 'le', erreurs: [] },
+                { texte: 'professeur', erreurs: [] },
+                { texte: 'dans', erreurs: [] },
+                { texte: 'la', erreurs: [] },
+                { texte: 'classe.', erreurs: [] }
+            ],
+            erreurs: [
+                { type: 'majuscule_phrase', position: 0, mot: 'les', correction: 'Les' }
+            ]
+        };
+
+        const resultatFiltre = oralFilter.appliquerFiltreReferenceOrale.call(
+            fakeApp,
+            phraseSaisieSansMajuscule,
+            resultatInitial
+        );
+
+        const aErreurMaj = resultatFiltre.erreurs.some(e => e.type === 'majuscule_phrase');
+        assert.ok(aErreurMaj, 'L\'erreur de majuscule initiale doit être conservée en mode oral');
+        assert.strictEqual(resultatFiltre.mots[0].erreurs.length, 1, 'Le premier mot doit conserver l\'erreur de majuscule');
+    });
+
+    it('ajoute l\'erreur de majuscule si non détectée initialement par l\'analyseur en mode oral', () => {
+        require('../src/main/oral-pedagogy.js');
+        const oralPedagogy = globalThis.AbeMainOralPedagogy;
+        const phraseReference = "Les élèves écoutent le professeur dans la classe.";
+        const phraseSaisie = "les élèves écoutent le professeur dans la classe.";
+
+        const resultatSansErreur = {
+            mots: [
+                { texte: 'les', erreurs: [] },
+                { texte: 'élèves', erreurs: [] }
+            ],
+            erreurs: []
+        };
+
+        const res = oralPedagogy.ajouterErreurMajusculeReference.call(
+            oralPedagogy,
+            resultatSansErreur,
+            phraseSaisie,
+            phraseReference
+        );
+
+        const aErreurMaj = res.erreurs.some(e => e.type === 'majuscule_phrase' && e.correction === 'Les');
+        assert.ok(aErreurMaj, 'ajouterErreurMajusculeReference doit ajouter l\'erreur de majuscule');
+    });
 });

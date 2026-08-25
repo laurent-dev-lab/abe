@@ -824,6 +824,13 @@ class AbeApplication {
         return resultatAnalyse;
     }
 
+    ajouterErreurMajusculeReference(resultatAnalyse, phraseSaisie, phraseReference) {
+        if (window.AbeMainOralPedagogy && typeof window.AbeMainOralPedagogy.ajouterErreurMajusculeReference === 'function') {
+            return window.AbeMainOralPedagogy.ajouterErreurMajusculeReference.call(this, resultatAnalyse, phraseSaisie, phraseReference);
+        }
+        return resultatAnalyse;
+    }
+
     enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []) {
         if (window.AbeMainOralPedagogy && typeof window.AbeMainOralPedagogy.enrichirExplicationAccord === 'function') {
             return window.AbeMainOralPedagogy.enrichirExplicationAccord.call(this, motSaisi, motAttendu, index, tokensReference);

@@ -1218,30 +1218,75 @@ body {
     .progress-bar {
         width: 100%;
     }
+}
 
+/* Télécommande sur tablettes et mobiles (mode horizontal et vertical) :
+   positionnée à 5px au-dessus de la ligne séparatrice du footer */
+@media (max-width: 1024px), (max-height: 600px) and (max-width: 1200px) {
     .abe-oral-player {
-        top: 8px;
-        right: 8px;
-        gap: 5px;
-        padding: 5px;
-        border-radius: 11px;
+        position: static;
+        top: auto;
+        right: auto;
+        bottom: auto;
+        left: auto;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        align-self: center;
+        flex-wrap: wrap;
+        width: fit-content;
+        max-width: 100%;
+        margin: var(--spacing-md) auto 5px auto;
+        padding: 6px 10px;
+        gap: 8px;
+        border-radius: 12px;
+    }
+
+    .footer {
+        margin-top: 0;
     }
 
     .abe-oral-icon-btn {
-        min-width: 116px;
-        height: 34px;
-        padding: 4px 8px;
+        min-width: 110px;
+        height: 38px;
+        padding: 6px 12px;
         gap: 6px;
-        border-radius: 7px;
+        border-radius: 8px;
     }
 
     .abe-oral-btn-icon {
-        font-size: 14px;
+        font-size: 15px;
+        width: 18px;
+    }
+
+    .abe-oral-btn-label {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .abe-oral-player {
+        gap: 5px;
+        padding: 4px 6px;
+        margin: var(--spacing-sm) auto 5px auto;
+    }
+
+    .abe-oral-icon-btn {
+        min-width: auto;
+        flex: 1 1 auto;
+        height: 34px;
+        padding: 4px 8px;
+        gap: 5px;
+    }
+
+    .abe-oral-btn-icon {
+        font-size: 13px;
         width: 16px;
     }
 
     .abe-oral-btn-label {
-        font-size: 10px;
+        font-size: 11px;
     }
 }
 
