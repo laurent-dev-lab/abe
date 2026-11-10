@@ -79,4 +79,39 @@ describe('Jeu Mot Invariable - Moteur et Validation des Lettres', () => {
         assert.strictEqual(jeu.etat.slots[0].valeur, 'p');
         assert.strictEqual(jeu.etat.indexActif, 1);
     });
+
+    it('aligne correctement un oubli de lettre au milieu du mot (ex: "sis" -> "s_is" pour "suis" et "liu" -> "li_u" pour "lieu")', () => {
+        let correctionRecue = null;
+        const jeu = new JeuMotInvariable({
+            onCorrige: (corr) => { correctionRecue = corr; },
+            onAffiche: () => {},
+            onTermine: () => {}
+        });
+
+        const erreurSis = {
+            mot: 'sis',
+            correction: 'suis',
+            parcoursType: 'oubli_lettre_interne'
+        };
+
+        assert.strictEqual(jeu.doitDeclencher(erreurSis), true, 'doitDeclencher doit être vrai pour oubli_lettre_interne');
+        jeu.initialiser(erreurSis);
+
+        assert.strictEqual(jeu.etat.slots.length, 4);
+        // 's' révélé, 'u' caché (actif), 'i' révélé, 's' révélé => s_is
+        assert.strictEqual(jeu.etat.slots[0].revele, true);
+        assert.strictEqual(jeu.etat.slots[0].valeur, 's');
+        assert.strictEqual(jeu.etat.slots[1].revele, false);
+        assert.strictEqual(jeu.etat.slots[1].valeur, '');
+        assert.strictEqual(jeu.etat.slots[2].revele, true);
+        assert.strictEqual(jeu.etat.slots[2].valeur, 'i');
+        assert.strictEqual(jeu.etat.slots[3].revele, true);
+        assert.strictEqual(jeu.etat.slots[3].valeur, 's');
+        assert.strictEqual(jeu.etat.indexActif, 1);
+
+        // Saisie de la lettre manquante 'u'
+        jeu.traiterPropositionCaractere('u');
+        assert.strictEqual(jeu.etat.termine, true);
+        assert.strictEqual(correctionRecue, 'suis');
+    });
 });

@@ -88,24 +88,80 @@
             rappel: 'Pour trouver l\'auxiliaire AVOIR, essaie de remplacer par "a".\nPour trouver l\'auxiliaire ÊTRE, essaie de remplacer par "est".'
         };
 
+        const cibleErreur = String(
+            (erreur && erreur.cibleErreur) ||
+            (erreur && erreur.contexteAccord && erreur.contexteAccord.cibleErreur) ||
+            ''
+        ).toLowerCase().trim();
+
         const questions = {
-            accord_determinant_nom: [
+            accord_determinant_nom: (() => {
+                const detTexte = (contexte && (contexte.determinant || contexte.determinat) && (contexte.determinant || contexte.determinat).texte) || '';
+                const nomTexte = (contexte && contexte.nom && contexte.nom.texte) || motCibleTexte || '[nom]';
+                const estErreurSurNom = cibleErreur === 'nom' || (
+                    !cibleErreur &&
+                    contexte && contexte.nom && erreur && erreur.mot &&
+                    String(contexte.nom.texte || '').toLowerCase().trim() === String(erreur.mot || '').toLowerCase().trim() &&
+                    detTexte.toLowerCase().trim() !== String(erreur.mot || '').toLowerCase().trim()
+                );
+
+                if (estErreurSurNom) {
+                    return [
+                        {
+                            question: `Quel est le déterminant qui accompagne le nom « ${nomTexte} » ?`,
+                            type: 'selection',
+                            cible: 'déterminant'
+                        },
+                        {
+                            question: 'Ce déterminant est-il singulier ou pluriel ?',
+                            type: 'choix',
+                            options: ['Singulier', 'Pluriel'],
+                            preserveOrder: true,
+                            tileClass: 'subject-number-choice'
+                        },
+                        {
+                            question: 'Écris la correction du nom pour l\'accorder avec son déterminant :',
+                            type: 'proposition',
+                            cible: 'nom'
+                        }
+                    ];
+                }
+
+                return [
+                    {
+                        question: 'Quel est le nom dans cette partie de la phrase ?',
+                        type: 'selection',
+                        cible: 'nom'
+                    },
+                    {
+                        question: 'Le nom est il singulier ou pluriel ?',
+                        type: 'choix',
+                        options: ['Singulier', 'Pluriel'],
+                        preserveOrder: true,
+                        tileClass: 'subject-number-choice'
+                    },
+                    {
+                        question: 'Écris la correction du déterminant :',
+                        type: 'proposition',
+                        cible: 'déterminant'
+                    }
+                ];
+            })(),
+            consonne_muette_finale: [
                 {
-                    question: 'Quel est le nom dans cette partie de la phrase ?',
-                    type: 'selection',
-                    cible: 'nom'
+                    type: 'info',
+                    titre: 'Consonne finale muette',
+                    question: (erreur && erreur.explication) || 'Ce mot se termine par une consonne qu\'on n\'entend pas. Pour la retrouver, tu peux la plupart du temps chercher le féminin du mot ou un mot de la même famille.',
+                    exemples: [
+                        'grand → grande',
+                        'chat → chatte',
+                        'gros → grosse'
+                    ]
                 },
                 {
-                    question: 'Le nom est il singulier ou pluriel ?',
-                    type: 'choix',
-                    options: ['Singulier', 'Pluriel'],
-                    preserveOrder: true,
-                    tileClass: 'subject-number-choice'
-                },
-                {
-                    question: 'Écris la correction du déterminant :',
+                    question: 'Écris le mot correctement, avec sa consonne finale :',
                     type: 'proposition',
-                    cible: 'déterminant'
+                    cible: 'mot_inconnu'
                 }
             ],
             accord_au_aux: [
@@ -127,36 +183,64 @@
                     cible: 'mot_inconnu'
                 }
             ],
-            accord_sujet_verbe: [
-                {
-                    question: 'Quel est le verbe dans cette phrase ?',
-                    type: 'selection',
-                    cible: 'verbe'
-                },
-                {
-                    question: `Qui est-ce qui ${verbeTexte} ?`,
-                    type: 'selection',
-                    cible: 'sujet'
-                },
-                {
-                    question: 'Le sujet est il singulier ou pluriel ?',
-                    type: 'choix',
-                    options: ['Singulier', 'Pluriel'],
-                    preserveOrder: true,
-                    tileClass: 'subject-number-choice'
-                },
-                ...(poserQuestionAuxiliaire ? [questionAuxiliaire] : []),
-                {
-                    type: 'proposition',
-                    cible: 'verbe',
-                    genererQuestion: (ctx) => {
-                        const nombre = ctx && ctx.nombreSujet ? ctx.nombreSujet : 'singulier';
-                        return nombre === 'pluriel'
-                            ? 'D\'après toi, comment faut-il écrire le verbe avec un sujet pluriel ?\nN\'oublie pas la terminaison !\nÉcris ta proposition :'
-                            : 'D\'après toi, comment faut-il écrire le verbe conjugué à la bonne personne ?\nÉcris ta proposition :';
-                    }
+            accord_sujet_verbe: (() => {
+                if (cibleErreur === 'sujet') {
+                    return [
+                        {
+                            question: 'Quel est le verbe dans cette phrase ?',
+                            type: 'selection',
+                            cible: 'verbe'
+                        },
+                        {
+                            question: `Qui est-ce qui ${verbeTexte} ?`,
+                            type: 'selection',
+                            cible: 'sujet'
+                        },
+                        {
+                            question: 'Le verbe est-il au singulier ou au pluriel ?',
+                            type: 'choix',
+                            options: ['Singulier', 'Pluriel'],
+                            preserveOrder: true,
+                            tileClass: 'subject-number-choice'
+                        },
+                        {
+                            question: 'Écris la correction du sujet :',
+                            type: 'proposition',
+                            cible: 'sujet'
+                        }
+                    ];
                 }
-            ],
+                return [
+                    {
+                        question: 'Quel est le verbe dans cette phrase ?',
+                        type: 'selection',
+                        cible: 'verbe'
+                    },
+                    {
+                        question: `Qui est-ce qui ${verbeTexte} ?`,
+                        type: 'selection',
+                        cible: 'sujet'
+                    },
+                    {
+                        question: 'Le sujet est il singulier ou pluriel ?',
+                        type: 'choix',
+                        options: ['Singulier', 'Pluriel'],
+                        preserveOrder: true,
+                        tileClass: 'subject-number-choice'
+                    },
+                    ...(poserQuestionAuxiliaire ? [questionAuxiliaire] : []),
+                    {
+                        type: 'proposition',
+                        cible: 'verbe',
+                        genererQuestion: (ctx) => {
+                            const nombre = ctx && ctx.nombreSujet ? ctx.nombreSujet : 'singulier';
+                            return nombre === 'pluriel'
+                                ? 'D\'après toi, comment faut-il écrire le verbe avec un sujet pluriel ?\nN\'oublie pas la terminaison !\nÉcris ta proposition :'
+                                : 'D\'après toi, comment faut-il écrire le verbe conjugué à la bonne personne ?\nÉcris ta proposition :';
+                        }
+                    }
+                ];
+            })(),
             accord_sujet_participe: (() => {
                 const participeTexte = contexte && contexte.participe ? contexte.participe.texte : (verbeTexte !== '[verbe]' ? verbeTexte : '[participe]');
                 return [
@@ -185,35 +269,100 @@
                     }
                 ];
             })(),
-            accord_adjectif_nom: [
-                {
-                    question: 'Quel est l\'adjectif dans cette phrase ?',
-                    type: 'selection',
-                    cible: 'adjectif'
-                },
-                {
-                    question: 'Quel nom qualifie cet adjectif ?',
-                    type: 'selection',
-                    cible: 'nom'
-                },
-                {
-                    question: 'Le nom est masculin ou féminin ?',
-                    type: 'choix',
-                    options: ['Masculin', 'Féminin']
-                },
-                {
-                    question: 'Le nom est il singulier ou pluriel ?',
-                    type: 'choix',
-                    options: ['Singulier', 'Pluriel'],
-                    preserveOrder: true,
-                    tileClass: 'subject-number-choice'
-                },
-                {
-                    question: 'Écris la correction de l\'adjectif :',
-                    type: 'proposition',
-                    cible: 'adjectif'
+            accord_adjectif_nom: (() => {
+                const estAttribut = cibleErreur === 'attribut' || (erreur && erreur.titreAide === 'Accord sujet-attribut');
+                if (estAttribut) {
+                    return [
+                        {
+                            question: 'Quel est l\'adjectif attribut dans cette phrase ?',
+                            type: 'selection',
+                            cible: 'adjectif'
+                        },
+                        {
+                            question: 'Quel est le sujet avec lequel cet adjectif s\'accorde ?',
+                            type: 'selection',
+                            cible: 'nom'
+                        },
+                        {
+                            question: 'Ce sujet est-il masculin ou féminin ?',
+                            type: 'choix',
+                            options: ['Masculin', 'Féminin']
+                        },
+                        {
+                            question: 'Ce sujet est-il singulier ou pluriel ?',
+                            type: 'choix',
+                            options: ['Singulier', 'Pluriel'],
+                            preserveOrder: true,
+                            tileClass: 'subject-number-choice'
+                        },
+                        {
+                            question: 'Écris la correction de l\'adjectif :',
+                            type: 'proposition',
+                            cible: 'adjectif'
+                        }
+                    ];
                 }
-            ],
+                if (cibleErreur === 'nom') {
+                    return [
+                        {
+                            question: 'Quel est le nom dans cette partie de la phrase ?',
+                            type: 'selection',
+                            cible: 'nom'
+                        },
+                        {
+                            question: 'Quel est l\'adjectif qui qualifie ce nom ?',
+                            type: 'selection',
+                            cible: 'adjectif'
+                        },
+                        {
+                            question: 'Le nom est masculin ou féminin ?',
+                            type: 'choix',
+                            options: ['Masculin', 'Féminin']
+                        },
+                        {
+                            question: 'Le nom est il singulier ou pluriel ?',
+                            type: 'choix',
+                            options: ['Singulier', 'Pluriel'],
+                            preserveOrder: true,
+                            tileClass: 'subject-number-choice'
+                        },
+                        {
+                            question: 'Écris la correction du nom :',
+                            type: 'proposition',
+                            cible: 'nom'
+                        }
+                    ];
+                }
+                return [
+                    {
+                        question: 'Quel est l\'adjectif dans cette phrase ?',
+                        type: 'selection',
+                        cible: 'adjectif'
+                    },
+                    {
+                        question: 'Quel nom qualifie cet adjectif ?',
+                        type: 'selection',
+                        cible: 'nom'
+                    },
+                    {
+                        question: 'Le nom est masculin ou féminin ?',
+                        type: 'choix',
+                        options: ['Masculin', 'Féminin']
+                    },
+                    {
+                        question: 'Le nom est il singulier ou pluriel ?',
+                        type: 'choix',
+                        options: ['Singulier', 'Pluriel'],
+                        preserveOrder: true,
+                        tileClass: 'subject-number-choice'
+                    },
+                    {
+                        question: 'Écris la correction de l\'adjectif :',
+                        type: 'proposition',
+                        cible: 'adjectif'
+                    }
+                ];
+            })(),
             conjugaison_verbe: (() => {
                 const modeVerbe = (erreur && erreur.modeVerbe) || '';
                 const estInfinitif = modeVerbe === 'infinitif';
@@ -961,6 +1110,9 @@
             // dans le contexte corpus, toute sélection qui matche cet item
             // (index, id corpus ou texte) est acceptée immédiatement.
             if (itemsCibles.some((item) => matchItem(item))) return true;
+            if (cible === 'sujet' && Array.isArray(contexte.sujets) && contexte.sujets.some((item) => matchItem(item))) {
+                return true;
+            }
 
             switch (cible) {
                 case 'verbe':
@@ -992,7 +1144,8 @@
                         const typeErreur = String(
                             contexte.erreur.parcoursType || contexte.erreur.type || ''
                         ).toLowerCase();
-                        if (typeErreur === 'accord_adjectif_nom' && motErreur && reponseNorm === motErreur) return true;
+                        const cibleErr = String(contexte.erreur.cibleErreur || '').toLowerCase();
+                        if (typeErreur === 'accord_adjectif_nom' && cibleErr === 'nom' && motErreur && reponseNorm === motErreur) return true;
                     }
                     break;
                 case 'adjectif':
@@ -1001,7 +1154,8 @@
                         const typeErreur = String(
                             contexte.erreur.parcoursType || contexte.erreur.type || ''
                         ).toLowerCase();
-                        if (typeErreur === 'accord_adjectif_nom' && motErreur && reponseNorm === motErreur) return true;
+                        const cibleErr = String(contexte.erreur.cibleErreur || '').toLowerCase();
+                        if (typeErreur === 'accord_adjectif_nom' && cibleErr !== 'nom' && motErreur && reponseNorm === motErreur) return true;
                     }
                     break;
                 case 'déterminant':
@@ -1171,6 +1325,7 @@
             texteQuestion.includes('seul ou plusieurs') ||
             texteQuestion.includes('seul ou sont-ils plusieurs') ||
             texteQuestion.includes('singulier ou pluriel') ||
+            (texteQuestion.includes('singulier') && texteQuestion.includes('pluriel')) ||
             texteQuestion.includes('comment doit-on écrire le déterminant') ||
             texteQuestion.includes("comment doit-on écrire l'adjectif")
         ) {
@@ -1209,7 +1364,7 @@
             return false;
         }
 
-        if (texteQuestion.includes('masculin ou féminin')) {
+        if (texteQuestion.includes('masculin ou féminin') || (texteQuestion.includes('masculin') && texteQuestion.includes('féminin'))) {
             // PRIORITÉ : le corpus (genreSujet) est la source de vérité.
             const genreConnu = (contexte && contexte.genreSujet) || null;
             if (genreConnu === 'féminin') return reponse === 'Féminin';

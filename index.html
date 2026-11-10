@@ -176,6 +176,92 @@
             </div>
         </div>
 
+        <!-- Modale d'entrée (quand aucun paramètre ?d=... n'est fourni dans l'URL) -->
+        <div id="modal-entree" class="modal-overlay modal-overlay-blocking hidden" role="dialog" aria-modal="true" aria-labelledby="modal-entree-titre">
+            <div class="modal-felicitations modal-confirmation">
+                <div class="modal-felicitations-icon">📝</div>
+                <h2 id="modal-entree-titre" class="modal-felicitations-titre">Bienvenue sur Abe</h2>
+                <p id="modal-entree-texte" class="modal-felicitations-texte">Pour continuer, choisis ton profil :</p>
+                <div id="modal-entree-actions" class="modal-actions">
+                    <button id="btn-role-prof" type="button" class="btn btn-primary">🎓 Je suis prof</button>
+                    <button id="btn-role-eleve" type="button" class="btn btn-secondary">🎒 Je suis élève</button>
+                </div>
+                <div id="modal-entree-message-eleve" class="prof-eleve-notice hidden">
+                    <p>Pour préparer ta dictée, tu dois cliquer directement sur le <strong>lien transmis par ton professeur</strong>.</p>
+                    <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.85;">Tu peux maintenant fermer cet onglet. <span id="prof-eleve-countdown"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modale Workflow Enseignant -->
+        <div id="modal-prof" class="modal-overlay modal-overlay-blocking hidden" role="dialog" aria-modal="true" aria-labelledby="modal-prof-titre">
+            <div class="modal-felicitations modal-prof-box">
+                <!-- Étape 1 : Saisie des phrases & Copie du préprompt -->
+                <div id="prof-step-phrases" class="prof-step">
+                    <h2 id="modal-prof-titre" class="modal-felicitations-titre">✍️ Préparation des phrases de la dictée</h2>
+                    <p class="prof-consigne-fullwidth">Écrivez ou collez vos phrases ci-dessous (4 à 5 phrases recommandées, une phrase par ligne avec sa ponctuation finale) :</p>
+                    <textarea
+                        id="prof-phrases-textarea"
+                        class="sentence-input prof-textarea-fullwidth"
+                        rows="6"
+                        placeholder="Exemple :&#10;Les élèves écoutent attentivement le professeur.&#10;Ils ont préparé leurs affaires ce matin."
+                    ></textarea>
+                    <div id="prof-copy-status" class="prof-status-banner hidden"></div>
+                    <div class="modal-actions prof-actions-bar">
+                        <button id="prof-phrases-cancel-btn" type="button" class="btn btn-secondary">Annuler</button>
+                        <button id="prof-copy-prompt-btn" type="button" class="btn btn-primary" disabled>📋 Copier le prompt pour l'IA</button>
+                    </div>
+                </div>
+
+                <!-- Étape 2 : Collage du code JSON généré par l'IA -->
+                <div id="prof-step-json" class="prof-step hidden">
+                    <h2 class="modal-felicitations-titre">🤖 Collage du JSON généré par l'IA</h2>
+                    <p class="prof-consigne-fullwidth">Collez le prompt copié dans une IA générative (ChatGPT, Gemini, Claude…), puis collez ci-dessous le code JSON complet qu'elle vous a fourni :</p>
+                    <textarea
+                        id="prof-json-textarea"
+                        class="sentence-input prof-textarea-fullwidth prof-json-textarea"
+                        rows="8"
+                        placeholder="Collez ici le code JSON [ { ... } ] généré par l'IA..."
+                        spellcheck="false"
+                    ></textarea>
+                    <div id="prof-json-error-container" class="prof-error-container hidden">
+                        <p id="prof-json-error" class="prof-error-msg"></p>
+                        <div class="prof-error-actions">
+                            <button id="prof-copy-fix-prompt-btn" type="button" class="btn btn-secondary btn-copy-fix">📋 Copier la consigne de correction pour l'IA</button>
+                            <span id="prof-copy-fix-feedback" class="prof-copy-fix-feedback hidden">✅ Consigne copiée !</span>
+                        </div>
+                    </div>
+                    <div class="modal-actions prof-actions-bar">
+                        <button id="prof-back-phrases-btn" type="button" class="btn btn-secondary">⬅ Retour aux phrases</button>
+                        <button id="prof-validate-json-btn" type="button" class="btn btn-success" disabled>✅ Valider et générer le lien</button>
+                    </div>
+                </div>
+
+                <!-- Étape 3 : Lien généré & Disclaimer -->
+                <div id="prof-step-link" class="prof-step hidden">
+                    <div class="modal-felicitations-icon">🔗</div>
+                    <h2 class="modal-felicitations-titre">Votre dictée est prête !</h2>
+                    <p class="modal-felicitations-texte">Partagez ce lien avec vos élèves pour qu'ils puissent préparer cette dictée :</p>
+                    <div class="prof-link-container">
+                        <input
+                            type="text"
+                            id="prof-generated-link"
+                            class="correction-field prof-link-input"
+                            readonly
+                        >
+                        <button id="prof-copy-link-btn" type="button" class="btn btn-primary">📋 Copier le lien</button>
+                    </div>
+                    <p id="prof-copy-link-feedback" class="prof-success-msg hidden"></p>
+                    <div class="prof-disclaimer-box">
+                        ⚠️ <strong>Important :</strong> Copiez ce lien et enregistrez-le précieusement dès maintenant ! Aucun parcours n'étant répertorié, une fois cette fenêtre fermée ce lien ne pourra plus être restitué.
+                    </div>
+                    <div class="modal-actions">
+                        <button id="prof-open-dictee-btn" type="button" class="btn btn-success">🚀 Ouvrir cette dictée</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <p class="footer-text">
@@ -231,5 +317,6 @@
     <script src="main.js"></script>
     <script src="corpus/corpus-oral.js"></script>
     <script src="oral/oral-player.js"></script>
+    <script src="src/main/prof-workflow.js"></script>
 </body>
 </html>

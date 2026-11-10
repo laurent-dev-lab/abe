@@ -36,9 +36,46 @@
         return resultat;
     }
 
+    function obtenirMeilleureVoixFrancaise(synthese = null) {
+        const synth = synthese || (typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null);
+        if (!synth || typeof synth.getVoices !== 'function') return null;
+
+        const voix = synth.getVoices() || [];
+        if (!Array.isArray(voix) || voix.length === 0) return null;
+
+        const voixFr = voix.filter((v) => v && (v.lang === 'fr-FR' || (typeof v.lang === 'string' && v.lang.toLowerCase().startsWith('fr'))));
+        if (voixFr.length === 0) return null;
+
+        // Ordre de préférence qualitatif décroissant :
+        // 1. Voix Neural / Natural (Edge, Azure, Chrome OS) : très expressives
+        // 2. Google français (Chrome Desktop/Android) : fluide
+        // 3. Apple Enhanced / Premium (macOS, iOS) : Thomas / Audrey
+        // 4. Voix par défaut fr-FR
+        const motifsPreferences = [
+            /natural/i,
+            /neural/i,
+            /google/i,
+            /enhanced/i,
+            /premium/i,
+            /thomas/i,
+            /audrey/i,
+            /hortense/i,
+            /paul/i
+        ];
+
+        for (const motif of motifsPreferences) {
+            const trouve = voixFr.find((v) => motif.test(v.name || ''));
+            if (trouve) return trouve;
+        }
+
+        // Repli : première voix fr-FR standard
+        return voixFr.find((v) => v.lang === 'fr-FR') || voixFr[0] || null;
+    }
+
     const api = {
         CORRECTIONS_PHONETIQUES,
-        preparerTexteSynthese
+        preparerTexteSynthese,
+        obtenirMeilleureVoixFrancaise
     };
 
     if (typeof module !== 'undefined' && module.exports) {

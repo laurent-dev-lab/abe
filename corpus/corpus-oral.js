@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const MIN_WORDS_PER_PHRASE = 4;
+    const MIN_WORDS_PER_PHRASE = 1;
 
     function compterMots(phrase) {
         const texte = String(phrase || '').trim();
@@ -14,23 +14,18 @@
         return compterMots(phrase) >= MIN_WORDS_PER_PHRASE;
     }
 
-    function randomIntSecure(maxExclusive) {
-        const max = Number(maxExclusive);
-        if (!Number.isInteger(max) || max <= 0) return 0;
-
-        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-            const uintMax = 0xffffffff;
-            const limite = uintMax - ((uintMax + 1) % max);
-            const buffer = new Uint32Array(1);
-            let valeur = 0;
-            do {
-                crypto.getRandomValues(buffer);
-                valeur = buffer[0];
-            } while (valeur > limite);
-            return valeur % max;
+    function obtenirIdDicteeUrl() {
+        if (typeof window === 'undefined' || !window.location) return '';
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            const brut = (params.get('d') || params.get('dictee') || '').trim();
+            if (/^[a-zA-Z0-9_-]{2,64}$/.test(brut)) {
+                return brut;
+            }
+        } catch {
+            // ignore
         }
-
-        return Math.floor(Math.random() * max);
+        return '';
     }
 
     function normaliserExclusions(exclusionOptionnelle) {
@@ -47,121 +42,28 @@
         );
     }
 
-    const STORAGE_DECK_KEY = 'abe_oral_deck_v1';
+    const phrases = [];
+    let chargementCorpusPromise = null;
 
-    function getStorage() {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('__abe_test__', '1');
-                localStorage.removeItem('__abe_test__');
-                return localStorage;
-            }
-        } catch {
-            // fallback
+    function getPhraseByIndex(index) {
+        const idx = Number(index);
+        if (!Number.isInteger(idx) || idx < 0 || idx >= phrases.length) {
+            return '';
         }
-        return null;
+        return phrases[idx] || '';
     }
 
-    let deck = [];
-    let deckIndex = 0;
-
-    function melangerDeck(source) {
-        const tableau = source.slice();
-        for (let i = tableau.length - 1; i > 0; i -= 1) {
-            const j = randomIntSecure(i + 1);
-            const tmp = tableau[i];
-            tableau[i] = tableau[j];
-            tableau[j] = tmp;
-        }
-        return tableau;
-    }
-
-    function sauvegarderDeck() {
-        try {
-            const storage = getStorage();
-            if (!storage) return;
-            storage.setItem(STORAGE_DECK_KEY, JSON.stringify({ deck, deckIndex }));
-        } catch {
-            // ignore
-        }
-    }
-
-    function chargerDeckPersistant(source) {
-        try {
-            const storage = getStorage();
-            if (!storage) return false;
-            const brut = storage.getItem(STORAGE_DECK_KEY);
-            if (!brut) return false;
-            const data = JSON.parse(brut);
-            if (!data || !Array.isArray(data.deck) || data.deck.length !== source.length) return false;
-            deck = data.deck;
-            deckIndex = Number.isInteger(data.deckIndex) && data.deckIndex >= 0 ? data.deckIndex : 0;
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    function initialiserDeck() {
-        const source = window.ABE_CORPUS_ORAL && Array.isArray(window.ABE_CORPUS_ORAL.phrases)
-            ? window.ABE_CORPUS_ORAL.phrases
-            : phrases;
-
-        if (!chargerDeckPersistant(source)) {
-            deck = melangerDeck(source);
-            deckIndex = 0;
-            sauvegarderDeck();
-        }
-    }
-
-    function getNextPhraseFromDeck(exclusionOptionnelle) {
-        const source = window.ABE_CORPUS_ORAL && Array.isArray(window.ABE_CORPUS_ORAL.phrases)
-            ? window.ABE_CORPUS_ORAL.phrases
-            : phrases;
-
-        if (source.length === 0) return '';
-        if (source.length === 1) return source[0];
-
-        // Re-initialiser le deck si vide ou épuisé
-        if (deck.length !== source.length || deckIndex >= deck.length) {
-            deck = melangerDeck(source);
-            deckIndex = 0;
-            sauvegarderDeck();
-        }
+    function getSecureRandomPhrase(exclusionOptionnelle) {
+        if (phrases.length === 0) return '';
+        if (phrases.length === 1) return phrases[0];
 
         const exclusions = normaliserExclusions(exclusionOptionnelle);
-
-        // Avancer dans le deck en sautant les exclusions
-        let tentatives = 0;
-        while (tentatives < deck.length) {
-            if (deckIndex >= deck.length) {
-                // Deck épuisé: remélanger pour le tour suivant
-                deck = melangerDeck(source);
-                deckIndex = 0;
-                sauvegarderDeck();
-            }
-            const candidate = deck[deckIndex];
-            deckIndex += 1;
-            sauvegarderDeck();
-            if (!exclusions.has(String(candidate || '').toLowerCase())) {
-                return candidate;
-            }
-            tentatives += 1;
-        }
-
-        // Fallback: retourner la première phrase disponible
-        for (const phrase of source) {
+        for (const phrase of phrases) {
             if (!exclusions.has(String(phrase || '').toLowerCase())) {
                 return phrase;
             }
         }
-
-        // Toutes les phrases sont exclues
-        return '';
-    }
-
-    function getSecureRandomPhrase(exclusionOptionnelle) {
-        return getNextPhraseFromDeck(exclusionOptionnelle);
+        return phrases[0];
     }
 
     function normaliserPhraseCanonique(phrase) {
@@ -200,7 +102,12 @@
 
         phrases.length = 0;
         phrases.push(...prochainesPhrases);
-        initialiserDeck();
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('abe-corpus-mis-a-jour', {
+                detail: { count: phrases.length, phrases: phrases.slice() }
+            }));
+        }
 
         return {
             ajoutees: phrases.length,
@@ -209,35 +116,11 @@
         };
     }
 
-    const phrases = [];
-    let chargementCorpusPromise = null;
-
     function extrairePhrasesDepuisCorpusDetaille(data) {
         const entrees = Array.isArray(data) ? data : [];
         return entrees
             .map((entree) => String((entree && (entree.phrase_normalisee || entree.phrase_originale)) || '').trim())
             .filter(Boolean);
-    }
-
-    function estNomFichierJsonValide(nom) {
-        const brut = String(nom || '').trim();
-        return /^[^\\/]+\.json$/i.test(brut);
-    }
-
-    function listerFichiersCorpusJson() {
-        return fetch(`corpus/index.php?v=${Date.now()}`, { cache: 'no-store' })
-            .then((response) => {
-                if (!response.ok) return [];
-                return response.json();
-            })
-            .then((data) => {
-                const fichiers = Array.isArray(data && data.files) ? data.files : [];
-                return fichiers
-                    .map((nom) => String(nom || '').trim())
-                    .filter(estNomFichierJsonValide)
-                    .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }));
-            })
-            .catch(() => []);
     }
 
     function chargerCorpusDepuisJson() {
@@ -251,33 +134,32 @@
 
         if (chargementCorpusPromise) return chargementCorpusPromise;
 
-        const fallbackFichiers = [
-            'Corpus1.json', 'Corpus2.json'
-        ];
-        chargementCorpusPromise = listerFichiersCorpusJson().then((fichiersDecouverts) => {
-            const fichiers = fichiersDecouverts.length > 0 ? fichiersDecouverts : fallbackFichiers;
-            return Promise.all(
-                fichiers.map((fichier) =>
-                fetch(`corpus/${fichier}?v=${Date.now()}`, { cache: 'no-store' })
-                    .then((response) => {
-                        if (!response.ok) return [];
-                        return response.json();
-                    })
-                    .then((data) => extrairePhrasesDepuisCorpusDetaille(data))
-                    .catch(() => [])
-                )
-            );
-        }).then((tousLesPhrases) => {
-            const fusion = [].concat(...tousLesPhrases);
-            return remplacerCorpus(fusion);
-        }).catch(() => {
-            chargementCorpusPromise = null;
-            return {
+        const dicteeId = obtenirIdDicteeUrl();
+        if (!dicteeId) {
+            return Promise.resolve({
                 ajoutees: 0,
-                total: phrases.length,
-                phrasesAjoutees: phrases.slice()
-            };
-        });
+                total: 0,
+                phrasesAjoutees: []
+            });
+        }
+
+        chargementCorpusPromise = fetch(`corpus/dictees/${encodeURIComponent(dicteeId)}.json?v=${Date.now()}`, { cache: 'no-store' })
+            .then((response) => {
+                if (!response.ok) return [];
+                return response.json();
+            })
+            .then((data) => {
+                const extraites = extrairePhrasesDepuisCorpusDetaille(data);
+                return remplacerCorpus(extraites);
+            })
+            .catch(() => {
+                chargementCorpusPromise = null;
+                return {
+                    ajoutees: 0,
+                    total: phrases.length,
+                    phrasesAjoutees: phrases.slice()
+                };
+            });
 
         return chargementCorpusPromise;
     }
@@ -288,6 +170,8 @@
         get count() {
             return phrases.length;
         },
+        obtenirIdDicteeUrl,
+        getPhraseByIndex,
         getSecureRandomPhrase,
         getMissingPhrasesFrom: extrairePhrasesManquantes,
         ensureLoaded: chargerCorpusDepuisJson,
@@ -298,6 +182,5 @@
         }
     };
 
-    initialiserDeck();
     chargerCorpusDepuisJson();
 })();

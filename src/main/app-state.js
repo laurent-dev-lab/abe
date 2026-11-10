@@ -104,6 +104,7 @@
                 segmentation_mot_colle: 9,
                 metathese: 10,
                 lettre_fantome_finale: 11,
+                consonne_muette_finale: 3,
                 conjugaison_verbe: 12,
                 mot_invariable: 13,
                 mot_inconnu: 14,

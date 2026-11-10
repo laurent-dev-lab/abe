@@ -26,7 +26,7 @@
             .replace(/[’´`]/g, "'")
             .replace(/\b(qu|[ldjtmnsc])'/gi, "$1' ")
             .replace(/\b([A-Za-zÀ-ÖØ-öø-ÿ]+)-(t-)?(tu|il|elle|on|nous|vous|ils|elles)\b/gi, (_m, verbe, liaisonT, pronom) => {
-                return liaisonT ? `${verbe} - t - ${pronom}` : `${verbe} - ${pronom}`;
+                return liaisonT ? `${verbe} -t- ${pronom}` : `${verbe} - ${pronom}`;
             })
             .replace(/[.,;:!?"«»()\[\]{}]/g, ' $& ') // Ajoute des espaces autour de la ponctuation et des guillemets/crochets
             .split(/\s+/)

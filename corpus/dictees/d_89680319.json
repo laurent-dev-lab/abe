@@ -1,0 +1,1354 @@
+[
+    {
+        "phrase_originale": "Le vieux château dressait ses hautes tours de pierre au milieu de la brume matinale.",
+        "phrase_normalisee": "Le vieux château dressait ses hautes tours de pierre au milieu de la brume matinale.",
+        "langue": "fr",
+        "tokens": [
+            {
+                "id": 1,
+                "texte": "Le",
+                "lemme": "le",
+                "nature": "déterminant",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 3
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 2,
+                "texte": "vieux",
+                "lemme": "vieux",
+                "nature": "adjectif",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 3
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 3,
+                "texte": "château",
+                "lemme": "château",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "sujet",
+                "dependance": {
+                    "type": "nsubj",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 4,
+                "texte": "dressait",
+                "lemme": "dresser",
+                "nature": "verbe",
+                "genre": null,
+                "nombre": "s",
+                "personne": "3",
+                "mode": "indicatif",
+                "temps": "imparfait",
+                "fonction": "verbe principal",
+                "dependance": {
+                    "type": "root",
+                    "cible": 0
+                },
+                "homophone_de": null,
+                "priorite_corpus": "accord_sujet_verbe"
+            },
+            {
+                "id": 5,
+                "texte": "ses",
+                "lemme": "son",
+                "nature": "déterminant",
+                "genre": "f",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 7
+                },
+                "homophone_de": [
+                    "ces",
+                    "c'est",
+                    "s'est"
+                ],
+                "priorite_corpus": null
+            },
+            {
+                "id": 6,
+                "texte": "hautes",
+                "lemme": "haut",
+                "nature": "adjectif",
+                "genre": "f",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 7
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 7,
+                "texte": "tours",
+                "lemme": "tour",
+                "nature": "nom",
+                "genre": "f",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "COD",
+                "dependance": {
+                    "type": "obj",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 8,
+                "texte": "de",
+                "lemme": "de",
+                "nature": "préposition",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "case",
+                    "cible": 9
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 9,
+                "texte": "pierre",
+                "lemme": "pierre",
+                "nature": "nom",
+                "genre": "f",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément du nom",
+                "dependance": {
+                    "type": "nmod",
+                    "cible": 7
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 10,
+                "texte": "au",
+                "lemme": "au",
+                "nature": "déterminant",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 11,
+                "texte": "milieu",
+                "lemme": "milieu",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément circonstanciel",
+                "dependance": {
+                    "type": "obl",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 12,
+                "texte": "de",
+                "lemme": "de",
+                "nature": "préposition",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "case",
+                    "cible": 14
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 13,
+                "texte": "la",
+                "lemme": "le",
+                "nature": "déterminant",
+                "genre": "f",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 14
+                },
+                "homophone_de": [
+                    "là"
+                ],
+                "priorite_corpus": null
+            },
+            {
+                "id": 14,
+                "texte": "brume",
+                "lemme": "brume",
+                "nature": "nom",
+                "genre": "f",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément du nom",
+                "dependance": {
+                    "type": "nmod",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 15,
+                "texte": "matinale",
+                "lemme": "matinal",
+                "nature": "adjectif",
+                "genre": "f",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 14
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 16,
+                "texte": ".",
+                "lemme": ".",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            }
+        ],
+        "relations_globales": [
+            {
+                "type": "accord_determinant_nom",
+                "det": 1,
+                "nom": 3,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 2,
+                "nom": 3,
+                "correct": true
+            },
+            {
+                "type": "accord_sujet_verbe",
+                "sujet": 3,
+                "verbe": 4,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 5,
+                "nom": 7,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 6,
+                "nom": 7,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 10,
+                "nom": 11,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 13,
+                "nom": 14,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 15,
+                "nom": 14,
+                "correct": true
+            }
+        ],
+        "erreurs": [],
+        "corrections": []
+    },
+    {
+        "phrase_originale": "Soudain, un bruit sourd retentit derrière la lourde porte en chêne.",
+        "phrase_normalisee": "Soudain, un bruit sourd retentit derrière la lourde porte en chêne.",
+        "langue": "fr",
+        "tokens": [
+            {
+                "id": 1,
+                "texte": "Soudain",
+                "lemme": "soudain",
+                "nature": "adverbe",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément circonstanciel",
+                "dependance": {
+                    "type": "advmod",
+                    "cible": 6
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 2,
+                "texte": ",",
+                "lemme": ",",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 6
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 3,
+                "texte": "un",
+                "lemme": "un",
+                "nature": "déterminant",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 4,
+                "texte": "bruit",
+                "lemme": "bruit",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "sujet",
+                "dependance": {
+                    "type": "nsubj",
+                    "cible": 6
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 5,
+                "texte": "sourd",
+                "lemme": "sourd",
+                "nature": "adjectif",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 6,
+                "texte": "retentit",
+                "lemme": "retentir",
+                "nature": "verbe",
+                "genre": null,
+                "nombre": "s",
+                "personne": "3",
+                "mode": "indicatif",
+                "temps": "passé simple",
+                "fonction": "verbe principal",
+                "dependance": {
+                    "type": "root",
+                    "cible": 0
+                },
+                "homophone_de": null,
+                "priorite_corpus": "accord_sujet_verbe"
+            },
+            {
+                "id": 7,
+                "texte": "derrière",
+                "lemme": "derrière",
+                "nature": "préposition",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "case",
+                    "cible": 10
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 8,
+                "texte": "la",
+                "lemme": "le",
+                "nature": "déterminant",
+                "genre": "f",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 10
+                },
+                "homophone_de": [
+                    "là"
+                ],
+                "priorite_corpus": null
+            },
+            {
+                "id": 9,
+                "texte": "lourde",
+                "lemme": "lourd",
+                "nature": "adjectif",
+                "genre": "f",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 10
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 10,
+                "texte": "porte",
+                "lemme": "porte",
+                "nature": "nom",
+                "genre": "f",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément circonstanciel",
+                "dependance": {
+                    "type": "obl",
+                    "cible": 6
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 11,
+                "texte": "en",
+                "lemme": "en",
+                "nature": "préposition",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "case",
+                    "cible": 12
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 12,
+                "texte": "chêne",
+                "lemme": "chêne",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément du nom",
+                "dependance": {
+                    "type": "nmod",
+                    "cible": 10
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 13,
+                "texte": ".",
+                "lemme": ".",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 6
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            }
+        ],
+        "relations_globales": [
+            {
+                "type": "accord_determinant_nom",
+                "det": 3,
+                "nom": 4,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 5,
+                "nom": 4,
+                "correct": true
+            },
+            {
+                "type": "accord_sujet_verbe",
+                "sujet": 4,
+                "verbe": 6,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 8,
+                "nom": 10,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 9,
+                "nom": 10,
+                "correct": true
+            }
+        ],
+        "erreurs": [],
+        "corrections": []
+    },
+    {
+        "phrase_originale": "Les jeunes chevaliers, intrigués par ce vacarme, s'approchèrent lentement à pas feutrés.",
+        "phrase_normalisee": "Les jeunes chevaliers, intrigués par ce vacarme, s'approchèrent lentement à pas feutrés.",
+        "langue": "fr",
+        "tokens": [
+            {
+                "id": 1,
+                "texte": "Les",
+                "lemme": "le",
+                "nature": "déterminant",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 3
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 2,
+                "texte": "jeunes",
+                "lemme": "jeune",
+                "nature": "adjectif",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 3
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 3,
+                "texte": "chevaliers",
+                "lemme": "chevalier",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "sujet",
+                "dependance": {
+                    "type": "nsubj",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 4,
+                "texte": ",",
+                "lemme": ",",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 5,
+                "texte": "intrigués",
+                "lemme": "intriguer",
+                "nature": "verbe",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": "participe",
+                "temps": "passé",
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "acl",
+                    "cible": 3
+                },
+                "homophone_de": null,
+                "priorite_corpus": "accord_sujet_participe"
+            },
+            {
+                "id": 6,
+                "texte": "par",
+                "lemme": "par",
+                "nature": "préposition",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "case",
+                    "cible": 8
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 7,
+                "texte": "ce",
+                "lemme": "ce",
+                "nature": "déterminant",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 8
+                },
+                "homophone_de": [
+                    "se"
+                ],
+                "priorite_corpus": null
+            },
+            {
+                "id": 8,
+                "texte": "vacarme",
+                "lemme": "vacarme",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément circonstanciel",
+                "dependance": {
+                    "type": "obl",
+                    "cible": 5
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 9,
+                "texte": ",",
+                "lemme": ",",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 10,
+                "texte": "s'",
+                "lemme": "se",
+                "nature": "pronom",
+                "genre": null,
+                "nombre": "p",
+                "personne": "3",
+                "mode": null,
+                "temps": null,
+                "fonction": "explétif",
+                "dependance": {
+                    "type": "expl",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 11,
+                "texte": "approchèrent",
+                "lemme": "approcher",
+                "nature": "verbe",
+                "genre": null,
+                "nombre": "p",
+                "personne": "3",
+                "mode": "indicatif",
+                "temps": "passé simple",
+                "fonction": "verbe principal",
+                "dependance": {
+                    "type": "root",
+                    "cible": 0
+                },
+                "homophone_de": null,
+                "priorite_corpus": "accord_sujet_verbe"
+            },
+            {
+                "id": 12,
+                "texte": "lentement",
+                "lemme": "lentement",
+                "nature": "adverbe",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément circonstanciel",
+                "dependance": {
+                    "type": "advmod",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 13,
+                "texte": "à",
+                "lemme": "à",
+                "nature": "préposition",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "case",
+                    "cible": 14
+                },
+                "homophone_de": [
+                    "a"
+                ],
+                "priorite_corpus": null
+            },
+            {
+                "id": 14,
+                "texte": "pas",
+                "lemme": "pas",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément circonstanciel",
+                "dependance": {
+                    "type": "obl",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 15,
+                "texte": "feutrés",
+                "lemme": "feutré",
+                "nature": "adjectif",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 14
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 16,
+                "texte": ".",
+                "lemme": ".",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 11
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            }
+        ],
+        "relations_globales": [
+            {
+                "type": "accord_determinant_nom",
+                "det": 1,
+                "nom": 3,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 2,
+                "nom": 3,
+                "correct": true
+            },
+            {
+                "type": "accord_sujet_participe",
+                "sujet": 3,
+                "participe": 5,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 7,
+                "nom": 8,
+                "correct": true
+            },
+            {
+                "type": "accord_sujet_verbe",
+                "sujet": 3,
+                "verbe": 11,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 15,
+                "nom": 14,
+                "correct": true
+            }
+        ],
+        "erreurs": [],
+        "corrections": []
+    },
+    {
+        "phrase_originale": "Bien qu'il fît sombre, ils distinguèrent des ombres étranges qui glissaient le long des murs.",
+        "phrase_normalisee": "Bien qu'il fît sombre, ils distinguèrent des ombres étranges qui glissaient le long des murs.",
+        "langue": "fr",
+        "tokens": [
+            {
+                "id": 1,
+                "texte": "Bien",
+                "lemme": "bien",
+                "nature": "conjonction",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "mark",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 2,
+                "texte": "qu'",
+                "lemme": "que",
+                "nature": "conjonction",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "fixed",
+                    "cible": 1
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 3,
+                "texte": "il",
+                "lemme": "il",
+                "nature": "pronom",
+                "genre": "m",
+                "nombre": "s",
+                "personne": "3",
+                "mode": null,
+                "temps": null,
+                "fonction": "sujet",
+                "dependance": {
+                    "type": "nsubj",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 4,
+                "texte": "fît",
+                "lemme": "faire",
+                "nature": "verbe",
+                "genre": null,
+                "nombre": "s",
+                "personne": "3",
+                "mode": "subjonctif",
+                "temps": "imparfait",
+                "fonction": null,
+                "dependance": {
+                    "type": "advcl",
+                    "cible": 8
+                },
+                "homophone_de": null,
+                "priorite_corpus": "accord_sujet_verbe"
+            },
+            {
+                "id": 5,
+                "texte": "sombre",
+                "lemme": "sombre",
+                "nature": "adjectif",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "attribut du sujet",
+                "dependance": {
+                    "type": "xcomp",
+                    "cible": 4
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 6,
+                "texte": ",",
+                "lemme": ",",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 8
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 7,
+                "texte": "ils",
+                "lemme": "il",
+                "nature": "pronom",
+                "genre": "m",
+                "nombre": "p",
+                "personne": "3",
+                "mode": null,
+                "temps": null,
+                "fonction": "sujet",
+                "dependance": {
+                    "type": "nsubj",
+                    "cible": 8
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 8,
+                "texte": "distinguèrent",
+                "lemme": "distinguer",
+                "nature": "verbe",
+                "genre": null,
+                "nombre": "p",
+                "personne": "3",
+                "mode": "indicatif",
+                "temps": "passé simple",
+                "fonction": "verbe principal",
+                "dependance": {
+                    "type": "root",
+                    "cible": 0
+                },
+                "homophone_de": null,
+                "priorite_corpus": "accord_sujet_verbe"
+            },
+            {
+                "id": 9,
+                "texte": "des",
+                "lemme": "un",
+                "nature": "déterminant",
+                "genre": "f",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 10
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 10,
+                "texte": "ombres",
+                "lemme": "ombre",
+                "nature": "nom",
+                "genre": "f",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "COD",
+                "dependance": {
+                    "type": "obj",
+                    "cible": 8
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 11,
+                "texte": "étranges",
+                "lemme": "étrange",
+                "nature": "adjectif",
+                "genre": "f",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "épithète",
+                "dependance": {
+                    "type": "amod",
+                    "cible": 10
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 12,
+                "texte": "qui",
+                "lemme": "qui",
+                "nature": "pronom",
+                "genre": "f",
+                "nombre": "p",
+                "personne": "3",
+                "mode": null,
+                "temps": null,
+                "fonction": "sujet",
+                "dependance": {
+                    "type": "nsubj",
+                    "cible": 13
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 13,
+                "texte": "glissaient",
+                "lemme": "glisser",
+                "nature": "verbe",
+                "genre": null,
+                "nombre": "p",
+                "personne": "3",
+                "mode": "indicatif",
+                "temps": "imparfait",
+                "fonction": null,
+                "dependance": {
+                    "type": "acl",
+                    "cible": 10
+                },
+                "homophone_de": null,
+                "priorite_corpus": "accord_sujet_verbe"
+            },
+            {
+                "id": 14,
+                "texte": "le",
+                "lemme": "le",
+                "nature": "déterminant",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 15
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 15,
+                "texte": "long",
+                "lemme": "long",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "s",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément circonstanciel",
+                "dependance": {
+                    "type": "obl",
+                    "cible": 13
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 16,
+                "texte": "des",
+                "lemme": "un",
+                "nature": "déterminant",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "det",
+                    "cible": 17
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 17,
+                "texte": "murs",
+                "lemme": "mur",
+                "nature": "nom",
+                "genre": "m",
+                "nombre": "p",
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": "complément du nom",
+                "dependance": {
+                    "type": "nmod",
+                    "cible": 15
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            },
+            {
+                "id": 18,
+                "texte": ".",
+                "lemme": ".",
+                "nature": "ponctuation",
+                "genre": null,
+                "nombre": null,
+                "personne": null,
+                "mode": null,
+                "temps": null,
+                "fonction": null,
+                "dependance": {
+                    "type": "punct",
+                    "cible": 8
+                },
+                "homophone_de": null,
+                "priorite_corpus": null
+            }
+        ],
+        "relations_globales": [
+            {
+                "type": "accord_sujet_verbe",
+                "sujet": 3,
+                "verbe": 4,
+                "correct": true
+            },
+            {
+                "type": "accord_sujet_attribut",
+                "sujet": 3,
+                "attribut": 5,
+                "correct": true
+            },
+            {
+                "type": "accord_sujet_verbe",
+                "sujet": 7,
+                "verbe": 8,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 9,
+                "nom": 10,
+                "correct": true
+            },
+            {
+                "type": "accord_adjectif_nom",
+                "adj": 11,
+                "nom": 10,
+                "correct": true
+            },
+            {
+                "type": "accord_sujet_verbe",
+                "sujet": 12,
+                "verbe": 13,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 14,
+                "nom": 15,
+                "correct": true
+            },
+            {
+                "type": "accord_determinant_nom",
+                "det": 16,
+                "nom": 17,
+                "correct": true
+            }
+        ],
+        "erreurs": [],
+        "corrections": []
+    }
+]

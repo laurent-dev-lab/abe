@@ -54,6 +54,12 @@
             if (!motUtilisateur || !motAttendu) return false;
             if (motUtilisateur.toLocaleLowerCase('fr-FR') === motAttendu.toLocaleLowerCase('fr-FR')) return false;
             if (motUtilisateur.length > motAttendu.length) return false;
+            if (
+                erreurActuelle.parcoursType === 'oubli_lettre_interne' ||
+                erreurActuelle.type === 'oubli_lettre_interne'
+            ) {
+                return true;
+            }
             return this.estMotAttenduInvariable(motAttendu);
         }
 
@@ -64,11 +70,45 @@
             const motAttendu = String(erreurActuelle && erreurActuelle.correction ? erreurActuelle.correction : '').trim();
             const lettresAttendu = Array.from(motAttendu);
             const lettresUtilisateur = Array.from(motUtilisateur);
+            const n = lettresAttendu.length;
+            const m = lettresUtilisateur.length;
+
+            // Alignement intelligent préfixe + suffixe (+ sous-séquence interne)
+            // afin que "sis" pour "suis" affiche bien "s _ i s" et "toujou" pour "toujours" affiche "t o u j o u _ _".
+            const indicesReveles = new Set();
+            let prefixLen = 0;
+            while (
+                prefixLen < m &&
+                prefixLen < n &&
+                this.normaliserCaractere(lettresUtilisateur[prefixLen]) === this.normaliserCaractere(lettresAttendu[prefixLen])
+            ) {
+                indicesReveles.add(prefixLen);
+                prefixLen += 1;
+            }
+
+            let suffixLen = 0;
+            while (
+                suffixLen < (m - prefixLen) &&
+                suffixLen < (n - prefixLen) &&
+                this.normaliserCaractere(lettresUtilisateur[m - 1 - suffixLen]) === this.normaliserCaractere(lettresAttendu[n - 1 - suffixLen])
+            ) {
+                indicesReveles.add(n - 1 - suffixLen);
+                suffixLen += 1;
+            }
+
+            // S'il reste des lettres utilisateur entre le préfixe et le suffixe, les aligner dans l'ordre
+            let idxUser = prefixLen;
+            const limiteUser = m - suffixLen;
+            const limiteAttendu = n - suffixLen;
+            for (let idxAtt = prefixLen; idxAtt < limiteAttendu && idxUser < limiteUser; idxAtt += 1) {
+                if (this.normaliserCaractere(lettresUtilisateur[idxUser]) === this.normaliserCaractere(lettresAttendu[idxAtt])) {
+                    indicesReveles.add(idxAtt);
+                    idxUser += 1;
+                }
+            }
 
             const slots = lettresAttendu.map((lettreAttendue, index) => {
-                const lettreUtilisateur = lettresUtilisateur[index] || '';
-                const correcte = lettreUtilisateur
-                    && this.normaliserCaractere(lettreUtilisateur) === this.normaliserCaractere(lettreAttendue);
+                const correcte = indicesReveles.has(index);
                 return {
                     attendu: lettreAttendue,
                     valeur: correcte ? lettreAttendue : '',
@@ -226,17 +266,27 @@
             const cadre = document.createElement('div');
             cadre.className = 'invariable-game';
 
+            const estMotManquant = Boolean(erreurActuelle && erreurActuelle.type === 'reference_orale_mot_manquant');
+            const estOubliLettreInterne = Boolean(
+                erreurActuelle &&
+                (erreurActuelle.parcoursType === 'oubli_lettre_interne' || erreurActuelle.type === 'oubli_lettre_interne')
+            );
+
             const titre = document.createElement('h4');
             titre.className = 'invariable-game-title';
-            titre.textContent = (erreurActuelle && erreurActuelle.type === 'reference_orale_mot_manquant')
+            titre.textContent = estMotManquant
                 ? 'Il manque un mot'
-                : 'Tu y es presque...';
+                : estOubliLettreInterne
+                    ? 'Lettre manquante dans ce mot'
+                    : 'Tu y es presque...';
             cadre.appendChild(titre);
 
             const intro = document.createElement('p');
             intro.className = 'invariable-game-intro';
-            if (erreurActuelle && erreurActuelle.type === 'reference_orale_mot_manquant') {
+            if (estMotManquant) {
                 intro.innerHTML = 'Il manque un mot (ou plusieurs mots) dans la phrase attendue,<br>merci de la réécouter et de saisir le (ou les) mot(s) manquant(s) ci-dessous.';
+            } else if (estOubliLettreInterne) {
+                intro.textContent = 'Il manque une lettre dans ce mot, écoute à nouveau la dictée et corrige ton oubli :';
             } else {
                 intro.textContent = 'Complète le mot invariable lettre par lettre (au clavier ou en cliquant sur les lettres) :';
             }

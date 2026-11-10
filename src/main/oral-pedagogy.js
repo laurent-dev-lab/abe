@@ -209,69 +209,130 @@ obtenirAideDetailleeTokenReference(indexMot, tokenAttendu) {
     };
 }
 
+obtenirIdDicteeDepuisUrl() {
+    if (typeof window === 'undefined' || !window.location) return '';
+    try {
+        const params = new URLSearchParams(window.location.search || '');
+        const brut = (params.get('d') || params.get('dictee') || '').trim();
+        if (/^[a-zA-Z0-9_-]{2,64}$/.test(brut)) {
+            return brut;
+        }
+    } catch {
+        // ignore
+    }
+    return '';
+}
+
+indexerEntreesCorpusDetaille(entrees = []) {
+    const liste = Array.isArray(entrees) ? entrees : [];
+    const index = new Map();
+    const corpusIndexe = [];
+
+    const normaliserFn = (typeof this.normaliserPhraseCorpus === 'function')
+        ? this.normaliserPhraseCorpus.bind(this)
+        : (phrase) => String(phrase || '').replace(/\s+/g, ' ').replace(/\s+([.,;:!?])/g, '$1').trim().toLowerCase();
+
+    const construireIndexFn = (typeof this.construireIndexCorpusDetaille === 'function')
+        ? this.construireIndexCorpusDetaille.bind(this)
+        : (phraseObj) => {
+            const tokens = Array.isArray(phraseObj && phraseObj.tokens) ? phraseObj.tokens : [];
+            const tokensParId = new Map();
+            const tokenIndexParId = new Map();
+            const tokensLexicaux = [];
+            let lexicalIndex = 0;
+            tokens.forEach((token) => {
+                if (!token) return;
+                const id = Number(token.id);
+                const texteTok = String(token.texte || '').trim();
+                const isPunct = String(token.nature || '').toLowerCase() === 'ponctuation' || /^([.,;:!?"«»()\[\]{}\-–—]+|-t-)$/i.test(texteTok);
+                if (Number.isInteger(id)) {
+                    tokensParId.set(id, token);
+                    tokenIndexParId.set(id, isPunct ? -1 : lexicalIndex);
+                }
+                if (!isPunct) {
+                    tokensLexicaux.push(token);
+                    lexicalIndex += 1;
+                }
+            });
+            return {
+                ...phraseObj,
+                tokens,
+                tokensParId,
+                tokenIndexParId,
+                tokensLexicaux,
+                relationsGlobales: Array.isArray(phraseObj && phraseObj.relations_globales) ? phraseObj.relations_globales : []
+            };
+        };
+
+    liste.forEach((entree) => {
+        if (!entree || typeof entree !== 'object') return;
+        const phraseNorm = normaliserFn(entree.phrase_normalisee || entree.phrase_originale);
+        if (!phraseNorm) return;
+        const entreeIndexee = construireIndexFn(entree);
+        index.set(phraseNorm, entreeIndexee);
+        corpusIndexe.push(entreeIndexee);
+    });
+
+    this.corpusDetaille = corpusIndexe;
+    this.corpusDetailleParPhrase = index;
+    this.corpusDetailleCharge = corpusIndexe.length > 0;
+
+    let ajoutees = 0;
+    if (typeof window !== 'undefined' && window.ABE_CORPUS_ORAL && typeof window.ABE_CORPUS_ORAL.remplacerCorpus === 'function') {
+        const phrasesAInserer = corpusIndexe
+            .map((entree) => String(entree.phrase_normalisee || entree.phrase_originale || '').trim())
+            .filter(Boolean);
+        const remplacement = window.ABE_CORPUS_ORAL.remplacerCorpus(phrasesAInserer);
+        ajoutees = remplacement && Number.isInteger(remplacement.total) ? remplacement.total : 0;
+    }
+
+    this.statutCorpusDetaille = {
+        charge: this.corpusDetailleCharge,
+        totalEntrees: corpusIndexe.length,
+        phrasesAjouteesAuModeOral: ajoutees
+    };
+}
+
 async chargerCorpusDetaille() {
     try {
-        const fallbackFichiers = [
-            'Corpus1.json', 'Corpus2.json'
-        ];
-        const fichiers = await fetch(`corpus/index.php?v=${Date.now()}`, { cache: 'no-store' })
-            .then((response) => {
-                if (!response.ok) return [];
-                return response.json();
-            })
-            .then((data) => {
-                const liste = Array.isArray(data && data.files) ? data.files : [];
-                return liste
-                    .map((nom) => String(nom || '').trim())
-                    .filter((nom) => /^[^\\/]+\.json$/i.test(nom))
-                    .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true, sensitivity: 'base' }));
-            })
-            .catch(() => []);
+        const dicteeId = (typeof this.obtenirIdDicteeDepuisUrl === 'function')
+            ? this.obtenirIdDicteeDepuisUrl()
+            : (window.AbeMainOralPedagogy && typeof window.AbeMainOralPedagogy.obtenirIdDicteeDepuisUrl === 'function')
+                ? window.AbeMainOralPedagogy.obtenirIdDicteeDepuisUrl.call(this)
+                : '';
 
-        const fichiersCorpus = fichiers.length > 0 ? fichiers : fallbackFichiers;
-        const reponses = await Promise.all(
-            fichiersCorpus.map((fichier) =>
-                fetch(`corpus/${fichier}?v=${Date.now()}`, { cache: 'no-store' })
-                    .then((response) => {
-                        if (!response.ok) return [];
-                        return response.json();
-                    })
-                    .catch(() => [])
-            )
-        );
-
-        const entrees = [].concat(...reponses.filter(Array.isArray));
-        const index = new Map();
-        const corpusIndexe = [];
-
-        entrees.forEach((entree) => {
-            if (!entree || typeof entree !== 'object') return;
-            const phraseNorm = this.normaliserPhraseCorpus(entree.phrase_normalisee || entree.phrase_originale);
-            if (!phraseNorm) return;
-            const entreeIndexee = this.construireIndexCorpusDetaille(entree);
-            index.set(phraseNorm, entreeIndexee);
-            corpusIndexe.push(entreeIndexee);
-        });
-
-        this.corpusDetaille = corpusIndexe;
-        this.corpusDetailleParPhrase = index;
-        this.corpusDetailleCharge = true;
-
-        let ajoutees = 0;
-        if (typeof window !== 'undefined' && window.ABE_CORPUS_ORAL && typeof window.ABE_CORPUS_ORAL.remplacerCorpus === 'function') {
-            const phrasesAInserer = corpusIndexe
-                .map((entree) => String(entree.phrase_normalisee || entree.phrase_originale || '').trim())
-                .filter(Boolean);
-            const remplacement = window.ABE_CORPUS_ORAL.remplacerCorpus(phrasesAInserer);
-            ajoutees = remplacement && Number.isInteger(remplacement.total) ? remplacement.total : 0;
+        if (!dicteeId) {
+            this.indexerEntreesCorpusDetaille([]);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('abe-aucune-dictee-url'));
+            }
+            return;
         }
 
-        this.statutCorpusDetaille = {
-            charge: true,
-            totalEntrees: corpusIndexe.length,
-            phrasesAjouteesAuModeOral: ajoutees
-        };
-    } catch {
+        // Tentative via le relais PHP (get_dictee.php) qui renouvelle l'expiration de 30 jours,
+        // avec repli direct sur le fichier statique .json si get_dictee.php n'est pas accessible.
+        let response = await fetch(`corpus/get_dictee.php?d=${encodeURIComponent(dicteeId)}&v=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) {
+            response = await fetch(`corpus/dictees/${encodeURIComponent(dicteeId)}.json?v=${Date.now()}`, { cache: 'no-store' });
+        }
+        if (!response.ok) {
+            this.indexerEntreesCorpusDetaille([]);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('abe-dictee-introuvable', { detail: { id: dicteeId } }));
+            }
+            return;
+        }
+
+        const data = await response.json();
+        const entrees = Array.isArray(data) ? data : (data && Array.isArray(data.phrases) ? data.phrases : []);
+        
+        if (typeof this.indexerEntreesCorpusDetaille === 'function') {
+            this.indexerEntreesCorpusDetaille(entrees);
+        } else if (window.AbeMainOralPedagogy && typeof window.AbeMainOralPedagogy.indexerEntreesCorpusDetaille === 'function') {
+            window.AbeMainOralPedagogy.indexerEntreesCorpusDetaille.call(this, entrees);
+        }
+    } catch (e) {
+        console.error('Erreur lors du chargement du corpus détaillé de la dictée :', e);
         this.corpusDetailleCharge = false;
         this.statutCorpusDetaille = {
             charge: false,
@@ -284,9 +345,9 @@ async chargerCorpusDetaille() {
 normaliserTokenComparaison(token) {
     if (!token) return '';
     const brut = String(token || '').trim();
-    if (/^[.,;:!?]$/.test(brut)) {
+    if (/^([.,;:!?"«»()\[\]{}\-–—]+|-t-)$/i.test(brut)) {
         // Ponctuation stricte en mode oral: pas de tolérance.
-        return `__PUNC__${brut}`;
+        return `__PUNC__${brut.toLowerCase()}`;
     }
     // Comparaison stricte: on normalise juste la casse et l'apostrophe,
     // sans suppression d'accents et sans Levenshtein.
@@ -315,13 +376,14 @@ extraireTokensLexicauxAvecMeta(tokens = []) {
     const resultat = [];
     let indexMot = 0;
 
-    (tokens || []).forEach((token) => {
+    (tokens || []).forEach((token, rawIndex) => {
         const normalise = this.normaliserTokenComparaison(token && token.texte);
         if (!normalise || normalise.startsWith('__PUNC__')) return;
         resultat.push({
             normalise,
             token,
-            indexMot
+            indexMot,
+            rawIndex
         });
         indexMot += 1;
     });
@@ -626,12 +688,21 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
     if (!tokenDetail) return null;
 
     // Helper : pour un token du corpus, trouver ce que l'utilisateur a écrit
-    // à la même position. L'affichage doit montrer la saisie (pour ne pas
+    // à la même position lexicale. L'affichage doit montrer la saisie (pour ne pas
     // donner la réponse), mais la validation utilise les données du corpus.
+    const motsLexicauxSaisis = Array.isArray(this.motsAnalyse)
+        ? this.extraireTokensLexicauxAvecMeta(this.motsAnalyse)
+        : [];
     const texteSaisiPourIndex = (idx) => {
-        if (idx < 0 || !Array.isArray(this.motsAnalyse) || idx >= this.motsAnalyse.length) return null;
-        const m = this.motsAnalyse[idx];
-        return (m && m.texte) || null;
+        if (idx < 0) return null;
+        if (idx < motsLexicauxSaisis.length && motsLexicauxSaisis[idx] && motsLexicauxSaisis[idx].token) {
+            return motsLexicauxSaisis[idx].token.texte || null;
+        }
+        if (Array.isArray(this.motsAnalyse) && idx < this.motsAnalyse.length) {
+            const m = this.motsAnalyse[idx];
+            return (m && m.texte) || null;
+        }
+        return null;
     };
     const texteSaisiPourToken = (tokenCorpus) => {
         if (!tokenCorpus || !Array.isArray(entree.tokensLexicaux)) return null;
@@ -640,6 +711,7 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
     };
 
     const nature = String(tokenDetail.nature || '').toLowerCase();
+    const fonctionToken = String(tokenDetail.fonction || '').toLowerCase();
     const depType = tokenDetail.dependance && tokenDetail.dependance.type
         ? String(tokenDetail.dependance.type) : '';
     const depCible = tokenDetail.dependance && tokenDetail.dependance.cible
@@ -650,34 +722,79 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
     const texteCible = tokenCible ? String(tokenCible.texte || '') : '';
     const genreCible = tokenCible ? String(tokenCible.genre || '') : '';
     const nombreCible = tokenCible ? String(tokenCible.nombre || '') : '';
-    const genreToken = String(tokenDetail.genre || '');
-    const nombreToken = String(tokenDetail.nombre || '');
 
     // Corpus-first strict:
     // la décision de parcours d'accord doit venir des dépendances /
     // relations du corpus, pas de la forme saisie par l'élève.
 
-    // 0) Reverse dependency : un déterminant pointe vers ce nom
-    // Si un déterminant (dep: det) a pour cible ce token (nom),
+    // 0) Reverse dependency : un déterminant (ou adjectif) pointe vers ce nom
+    // Si un déterminant (dep: det) a pour cible ce token (nom) ou via relations_globales,
     // l'erreur est un accord déterminant-nom, même si le nom est aussi sujet.
     if (nature.includes('nom')) {
+        let detToken = null;
         for (const t of entree.tokensLexicaux) {
             if (t && t.dependance && t.dependance.type === 'det' && Number(t.dependance.cible) === Number(tokenDetail.id)) {
-                const genreDet = String(t.genre || '');
-                const nombreDet = String(t.nombre || '');
-                // Afficher ce que l'utilisateur a écrit, pas la réponse du corpus
-                const texteSaisiDet = texteSaisiPourToken(t) || t.texte;
-                const texteSaisiNom = texteSaisiPourIndex(index) || motSaisi;
-                const detInfo = { texte: texteSaisiDet, donnees: t };
-                const nomInfo = { texte: texteSaisiNom, donnees: tokenDetail };
-                return {
-                    explication: `Le nom doit s'accorder avec le déterminant « ${texteSaisiDet} » (${genreDet === 'f' ? 'féminin' : 'masculin'} ${nombreDet === 'p' ? 'pluriel' : 'singulier'}). Vérifie le genre et le nombre.`,
-                    titreAide: 'Accord déterminant-nom',
-                    memo: `Un nom s'accorde en genre et en nombre avec le déterminant qui l'accompagne.`,
-                    parcoursType: 'accord_determinant_nom',
-                    contexteAccord: { determinant: detInfo, determinat: detInfo, nom: nomInfo }
-                };
+                detToken = t;
+                break;
             }
+        }
+        if (!detToken && Array.isArray(entree.relationsGlobales)) {
+            const relDet = entree.relationsGlobales.find((r) =>
+                r && (r.type === 'accord_determinant_nom' || r.type === 'accord_det_nom') && Number(r.nom) === Number(tokenDetail.id)
+            );
+            if (relDet && relDet.det) {
+                detToken = tokensParId.get(Number(relDet.det)) || null;
+            }
+        }
+        // Fallback de secours : si le token lexical précédent (ou avant un adjectif antéposé) est un déterminant ou article contracté
+        if (!detToken && index > 0 && Array.isArray(entree.tokensLexicaux)) {
+            for (let k = index - 1; k >= Math.max(0, index - 2); k -= 1) {
+                const precedent = entree.tokensLexicaux[k];
+                if (!precedent) continue;
+                const natPrec = String(precedent.nature || '').toLowerCase();
+                const txtPrec = String(precedent.texte || '').toLowerCase().trim();
+                if (natPrec.includes('déterminant') || natPrec.includes('determinant') || ['du', 'au', 'aux'].includes(txtPrec)) {
+                    detToken = precedent;
+                    break;
+                }
+                if (!natPrec.includes('adjectif')) break;
+            }
+        }
+
+        if (detToken) {
+            const texteSaisiDet = texteSaisiPourToken(detToken) || detToken.texte;
+            const texteSaisiNom = texteSaisiPourIndex(index) || motSaisi;
+            const detInfo = { texte: texteSaisiDet, donnees: detToken };
+            const nomInfo = { texte: texteSaisiNom, donnees: tokenDetail };
+            return {
+                explication: `Le nom « ${texteSaisiNom} » doit s'accorder avec le déterminant « ${texteSaisiDet} ». Vérifie le genre et le nombre.`,
+                titreAide: 'Accord déterminant-nom',
+                memo: `Un nom s'accorde en genre et en nombre avec le déterminant qui l'accompagne.`,
+                parcoursType: 'accord_determinant_nom',
+                cibleErreur: 'nom',
+                contexteAccord: { determinant: detInfo, determinat: detInfo, nom: nomInfo, cibleErreur: 'nom' }
+            };
+        }
+
+        // Si un adjectif qualifie ce nom et qu'il n'y a pas de déterminant
+        let adjToken = null;
+        for (const t of entree.tokensLexicaux) {
+            if (t && t.dependance && t.dependance.type === 'amod' && Number(t.dependance.cible) === Number(tokenDetail.id)) {
+                adjToken = t;
+                break;
+            }
+        }
+        if (adjToken) {
+            const texteSaisiAdj = texteSaisiPourToken(adjToken) || adjToken.texte;
+            const texteSaisiNom = texteSaisiPourIndex(index) || motSaisi;
+            return {
+                explication: `Le nom « ${texteSaisiNom} » et l'adjectif « ${texteSaisiAdj} » doivent s'accorder en genre et en nombre.`,
+                titreAide: 'Accord adjectif-nom',
+                memo: `Un nom et l'adjectif qui le qualifie s'accordent en genre et en nombre.`,
+                parcoursType: 'accord_adjectif_nom',
+                cibleErreur: 'nom',
+                contexteAccord: { adjectif: { texte: texteSaisiAdj, donnees: adjToken }, nom: { texte: texteSaisiNom, donnees: tokenDetail }, cibleErreur: 'nom' }
+            };
         }
     }
 
@@ -686,11 +803,12 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
         const sujetSaisi = texteSaisiPourIndex(index) || motSaisi;
         const verbeSaisi = texteSaisiPourToken(tokenCible) || texteCible;
         return {
-            explication: `Le verbe doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie la terminaison.`,
+            explication: `Le sujet « ${sujetSaisi} » et le verbe « ${verbeSaisi} » doivent s'accorder.`,
             titreAide: 'Accord sujet-verbe',
-            memo: `Pour accorder le verbe avec son sujet, identifie le sujet (qui ?) puis choisis la terminaison qui convient.`,
+            memo: `Le sujet et le verbe s'accordent toujours en personne et en nombre.`,
             parcoursType: 'accord_sujet_verbe',
-            contexteAccord: { sujet: { texte: sujetSaisi, donnees: tokenDetail }, verbe: { texte: verbeSaisi, donnees: tokenCible } }
+            cibleErreur: 'sujet',
+            contexteAccord: { sujet: { texte: sujetSaisi, donnees: tokenDetail }, verbe: { texte: verbeSaisi, donnees: tokenCible }, cibleErreur: 'sujet' }
         };
     }
 
@@ -701,37 +819,92 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
         const detInfo = { texte: texteSaisiDet, donnees: tokenDetail };
         const nomInfo = { texte: texteSaisiNom, donnees: tokenCible };
         return {
-            explication: `Le déterminant doit s'accorder avec le nom « ${texteSaisiNom} » (${genreCible === 'f' ? 'féminin' : 'masculin'} ${nombreCible === 'p' ? 'pluriel' : 'singulier'}).`,
+            explication: `Le déterminant « ${texteSaisiDet} » doit s'accorder avec le nom « ${texteSaisiNom} ». Vérifie le genre et le nombre.`,
             titreAide: 'Accord déterminant-nom',
             memo: `Un déterminant s'accorde en genre (masculin/féminin) et en nombre (singulier/pluriel) avec le nom qu'il accompagne.`,
             parcoursType: 'accord_determinant_nom',
-            contexteAccord: { determinant: detInfo, determinat: detInfo, nom: nomInfo }
+            cibleErreur: 'déterminant',
+            contexteAccord: { determinant: detInfo, determinat: detInfo, nom: nomInfo, cibleErreur: 'déterminant' }
         };
     }
 
-    // 3) Accord adjectif-nom : le token est un adjectif (dep: amod)
+    // 3) Accord adjectif-nom : le token est un adjectif épithète (dep: amod)
     if (depType === 'amod' && nature.includes('adjectif') && natureCible.includes('nom')) {
         const texteSaisiAdj = texteSaisiPourIndex(index) || motSaisi;
         const texteSaisiNom = texteSaisiPourToken(tokenCible) || texteCible;
         return {
-            explication: `L'adjectif doit s'accorder avec le nom « ${texteSaisiNom} » (${genreCible === 'f' ? 'féminin' : 'masculin'} ${nombreCible === 'p' ? 'pluriel' : 'singulier'}). Vérifie la terminaison.`,
+            explication: `L'adjectif « ${texteSaisiAdj} » doit s'accorder avec le nom « ${texteSaisiNom} ». Vérifie le genre et le nombre.`,
             titreAide: 'Accord adjectif-nom',
             memo: `Un adjectif s'accorde en genre (masculin/féminin) et en nombre (singulier/pluriel) avec le nom qu'il qualifie.`,
             parcoursType: 'accord_adjectif_nom',
-            contexteAccord: { adjectif: { texte: texteSaisiAdj, donnees: tokenDetail }, nom: { texte: texteSaisiNom, donnees: tokenCible } }
+            cibleErreur: 'adjectif',
+            contexteAccord: { adjectif: { texte: texteSaisiAdj, donnees: tokenDetail }, nom: { texte: texteSaisiNom, donnees: tokenCible }, cibleErreur: 'adjectif' }
         };
     }
 
-    // 4) Accord participe passé : le token est un participe passé avec sujet
-    if (nature.includes('verbe') && String(tokenDetail.mode || '').includes('participe') && depType === 'acl') {
+    // 3b) Accord sujet-attribut : le token est un adjectif attribut du sujet
+    if (nature.includes('adjectif') && (fonctionToken.includes('attribut') || depType === 'xcomp' || depType === 'acomp')) {
+        let tSujet = null;
+        if (tokenCible && (natureCible.includes('nom') || natureCible.includes('pronom'))) {
+            tSujet = tokenCible;
+        } else if (depCible > 0) {
+            tSujet = entree.tokensLexicaux.find(
+                (t) => t && t.dependance && t.dependance.type === 'nsubj' && Number(t.dependance.cible) === depCible
+            ) || null;
+        }
+        if (!tSujet && Array.isArray(entree.relationsGlobales)) {
+            const relAttr = entree.relationsGlobales.find(
+                (r) => r && r.type === 'accord_sujet_attribut' && Number(r.attribut) === Number(tokenDetail.id)
+            );
+            if (relAttr && relAttr.sujet) {
+                tSujet = tokensParId.get(Number(relAttr.sujet)) || null;
+            }
+        }
+        if (tSujet) {
+            const sujetSaisi = texteSaisiPourToken(tSujet) || tSujet.texte;
+            const attrSaisi = texteSaisiPourIndex(index) || motSaisi;
+            return {
+                explication: `L'adjectif attribut « ${attrSaisi} » doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie le genre et le nombre.`,
+                titreAide: 'Accord sujet-attribut',
+                memo: `L'attribut du sujet s'accorde en genre et en nombre avec le sujet.`,
+                parcoursType: 'accord_adjectif_nom',
+                cibleErreur: 'attribut',
+                contexteAccord: {
+                    adjectif: { texte: attrSaisi, donnees: tokenDetail },
+                    nom: { texte: sujetSaisi, donnees: tSujet },
+                    sujet: { texte: sujetSaisi, donnees: tSujet },
+                    cibleErreur: 'attribut'
+                }
+            };
+        }
+    }
+
+    // 4) Accord participe passé : le token est un participe passé avec sujet ou COD
+    if (nature.includes('verbe') && String(tokenDetail.mode || '').toLowerCase().includes('participe')) {
         const texteSaisiPart = texteSaisiPourIndex(index) || motSaisi;
-        // Trouver le sujet du participe via nsubj pointant vers ce token
+        // Trouver le sujet du participe via nsubj pointant vers ce token, ou cible acl, ou relations_globales
         let sujetParticipe = null;
         for (const t of entree.tokensLexicaux) {
             if (t && t.dependance && t.dependance.type === 'nsubj' && Number(t.dependance.cible) === Number(tokenDetail.id)) {
                 const texteSaisiSujet = texteSaisiPourToken(t) || t.texte;
                 sujetParticipe = { texte: texteSaisiSujet, donnees: t };
                 break;
+            }
+        }
+        if (!sujetParticipe && depType === 'acl' && tokenCible && (natureCible.includes('nom') || natureCible.includes('pronom'))) {
+            const texteSaisiSujet = texteSaisiPourToken(tokenCible) || tokenCible.texte;
+            sujetParticipe = { texte: texteSaisiSujet, donnees: tokenCible };
+        }
+        if (!sujetParticipe && Array.isArray(entree.relationsGlobales)) {
+            const relPart = entree.relationsGlobales.find(
+                (r) => r && r.type === 'accord_sujet_participe' && Number(r.participe) === Number(tokenDetail.id)
+            );
+            if (relPart && relPart.sujet) {
+                const tSuj = tokensParId.get(Number(relPart.sujet));
+                if (tSuj) {
+                    const texteSaisiSujet = texteSaisiPourToken(tSuj) || tSuj.texte;
+                    sujetParticipe = { texte: texteSaisiSujet, donnees: tSuj };
+                }
             }
         }
         // Trouver le COD (obj) placé avant le participe (règle avoir + COD antéposé)
@@ -746,17 +919,21 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
                 break;
             }
         }
-        return {
-            explication: `Le participe passé doit s'accorder. Vérifie avec le sujet ou l'auxiliaire.`,
-            titreAide: 'Accord participe passé',
-            memo: `Un participe passé employé avec « être » s'accorde en genre et en nombre avec le sujet.\nAvec « avoir », il s'accorde avec le COD si celui-ci est placé avant.`,
-            parcoursType: 'accord_sujet_participe',
-            contexteAccord: {
-                participe: { texte: texteSaisiPart, donnees: tokenDetail },
-                ...(sujetParticipe ? { sujet: sujetParticipe } : {}),
-                ...(codParticipe ? { cod: codParticipe } : {})
-            }
-        };
+        if (sujetParticipe || codParticipe || depType === 'acl') {
+            return {
+                explication: `Le participe passé « ${texteSaisiPart} » doit s'accorder. Vérifie avec le sujet ou l'auxiliaire.`,
+                titreAide: 'Accord participe passé',
+                memo: `Un participe passé employé avec « être » s'accorde en genre et en nombre avec le sujet.\nAvec « avoir », il s'accorde avec le COD si celui-ci est placé avant.`,
+                parcoursType: 'accord_sujet_participe',
+                cibleErreur: 'participe',
+                contexteAccord: {
+                    participe: { texte: texteSaisiPart, donnees: tokenDetail },
+                    ...(sujetParticipe ? { sujet: sujetParticipe } : {}),
+                    ...(codParticipe ? { cod: codParticipe } : {}),
+                    cibleErreur: 'participe'
+                }
+            };
+        }
     }
 
     // 5) Vérification via relations_globales
@@ -777,49 +954,68 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
             const verbeSaisi = tVerbe ? (texteSaisiPourToken(tVerbe) || tVerbe.texte) : '';
             if (idToken === idSujet && tVerbe) {
                 return {
-                    explication: `Le verbe doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie la terminaison.`,
+                    explication: `Le sujet « ${sujetSaisi} » et le verbe « ${verbeSaisi} » doivent s'accorder.`,
                     titreAide: 'Accord sujet-verbe',
                     memo: `Pour accorder le verbe avec son sujet, identifie le sujet (qui ?) puis choisis la terminaison qui convient.`,
                     parcoursType: 'accord_sujet_verbe',
-                    contexteAccord: { sujet: { texte: sujetSaisi, donnees: tSujet }, verbe: { texte: verbeSaisi, donnees: tVerbe } }
+                    cibleErreur: 'sujet',
+                    contexteAccord: { sujet: { texte: sujetSaisi, donnees: tSujet }, verbe: { texte: verbeSaisi, donnees: tVerbe }, cibleErreur: 'sujet' }
                 };
             }
             if (idToken === idVerbe && tSujet) {
+                const sujetsRels = relations
+                    .filter((r) => r && r.type === 'accord_sujet_verbe' && Number(r.verbe) === idVerbe && Number(r.sujet) > 0)
+                    .map((r) => tokensParId.get(Number(r.sujet)))
+                    .filter(Boolean);
+                const sujetsInfos = sujetsRels.length > 0
+                    ? sujetsRels.map((ts) => ({ texte: texteSaisiPourToken(ts) || ts.texte, donnees: ts }))
+                    : [{ texte: sujetSaisi, donnees: tSujet }];
+                const libelleSujet = sujetsInfos.length > 1
+                    ? sujetsInfos.map((s) => `« ${s.texte} »`).join(' et ')
+                    : `« ${sujetSaisi} »`;
                 return {
-                    explication: `Le verbe doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie la terminaison.`,
+                    explication: `Le verbe doit s'accorder avec le sujet ${libelleSujet}. Vérifie la terminaison.`,
                     titreAide: 'Accord sujet-verbe',
                     memo: `Pour accorder le verbe avec son sujet, identifie le sujet (qui ?) puis choisis la terminaison qui convient.`,
                     parcoursType: 'accord_sujet_verbe',
-                    contexteAccord: { sujet: { texte: sujetSaisi, donnees: tSujet }, verbe: { texte: verbeSaisi, donnees: tVerbe } }
+                    cibleErreur: 'verbe',
+                    contexteAccord: {
+                        sujet: { texte: sujetSaisi, donnees: tSujet },
+                        sujets: sujetsInfos,
+                        verbe: { texte: verbeSaisi, donnees: tVerbe },
+                        cibleErreur: 'verbe'
+                    }
                 };
             }
         }
 
-        if (typeRel === 'accord_determinant_nom') {
+        if (typeRel === 'accord_determinant_nom' || typeRel === 'accord_det_nom') {
             const idDet = Number(rel.det || 0);
             const idNom = Number(rel.nom || 0);
             const tDet = tokensParId.get(idDet);
             const tNom = tokensParId.get(idNom);
             const detSaisi = tDet ? (texteSaisiPourToken(tDet) || tDet.texte) : '';
             const nomSaisi = tNom ? (texteSaisiPourToken(tNom) || tNom.texte) : '';
-            const genreNom = tNom ? String(tNom.genre || '') : genreCible;
-            const nombreNom = tNom ? String(tNom.nombre || '') : nombreCible;
+            const detInfo = { texte: detSaisi, donnees: tDet };
+            const nomInfo = { texte: nomSaisi, donnees: tNom };
             if (idToken === idDet && tNom) {
                 return {
-                    explication: `Le déterminant doit s'accorder avec le nom « ${nomSaisi} » (${genreNom === 'f' ? 'féminin' : 'masculin'} ${nombreNom === 'p' ? 'pluriel' : 'singulier'}).`,
+                    explication: `Le déterminant « ${detSaisi} » doit s'accorder avec le nom « ${nomSaisi} ». Vérifie le genre et le nombre.`,
                     titreAide: 'Accord déterminant-nom',
                     memo: `Un déterminant s'accorde en genre et en nombre avec le nom qu'il accompagne.`,
                     parcoursType: 'accord_determinant_nom',
-                    contexteAccord: { determinat: { texte: detSaisi, donnees: tDet }, nom: { texte: nomSaisi, donnees: tNom } }
+                    cibleErreur: 'déterminant',
+                    contexteAccord: { determinant: detInfo, determinat: detInfo, nom: nomInfo, cibleErreur: 'déterminant' }
                 };
             }
             if (idToken === idNom && tDet) {
                 return {
-                    explication: `Le nom doit s'accorder avec le déterminant « ${detSaisi} ». Vérifie le genre et le nombre.`,
+                    explication: `Le nom « ${nomSaisi} » doit s'accorder avec le déterminant « ${detSaisi} ». Vérifie le genre et le nombre.`,
                     titreAide: 'Accord déterminant-nom',
                     memo: `Un nom s'accorde en genre et en nombre avec le déterminant qui l'accompagne.`,
                     parcoursType: 'accord_determinant_nom',
-                    contexteAccord: { determinat: { texte: detSaisi, donnees: tDet }, nom: { texte: nomSaisi, donnees: tNom } }
+                    cibleErreur: 'nom',
+                    contexteAccord: { determinant: detInfo, determinat: detInfo, nom: nomInfo, cibleErreur: 'nom' }
                 };
             }
         }
@@ -831,24 +1027,24 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
             const tNom = tokensParId.get(idNom);
             const adjSaisi = tAdj ? (texteSaisiPourToken(tAdj) || tAdj.texte) : '';
             const nomSaisi = tNom ? (texteSaisiPourToken(tNom) || tNom.texte) : '';
-            const genreNom = tNom ? String(tNom.genre || '') : genreCible;
-            const nombreNom = tNom ? String(tNom.nombre || '') : nombreCible;
             if (idToken === idAdj && tNom) {
                 return {
-                    explication: `L'adjectif doit s'accorder avec le nom « ${nomSaisi} » (${genreNom === 'f' ? 'féminin' : 'masculin'} ${nombreNom === 'p' ? 'pluriel' : 'singulier'}). Vérifie la terminaison.`,
+                    explication: `L'adjectif « ${adjSaisi} » doit s'accorder avec le nom « ${nomSaisi} ». Vérifie le genre et le nombre.`,
                     titreAide: 'Accord adjectif-nom',
                     memo: `Un adjectif s'accorde en genre et en nombre avec le nom qu'il qualifie.`,
                     parcoursType: 'accord_adjectif_nom',
-                    contexteAccord: { adjectif: { texte: adjSaisi, donnees: tAdj }, nom: { texte: nomSaisi, donnees: tNom } }
+                    cibleErreur: 'adjectif',
+                    contexteAccord: { adjectif: { texte: adjSaisi, donnees: tAdj }, nom: { texte: nomSaisi, donnees: tNom }, cibleErreur: 'adjectif' }
                 };
             }
             if (idToken === idNom && tAdj) {
                 return {
-                    explication: `Le nom doit s'accorder avec l'adjectif « ${adjSaisi} ». Vérifie le genre et le nombre.`,
+                    explication: `Le nom « ${nomSaisi} » doit s'accorder avec l'adjectif « ${adjSaisi} ». Vérifie le genre et le nombre.`,
                     titreAide: 'Accord adjectif-nom',
                     memo: `Un nom et l'adjectif qui le qualifie s'accordent en genre et en nombre.`,
                     parcoursType: 'accord_adjectif_nom',
-                    contexteAccord: { adjectif: { texte: adjSaisi, donnees: tAdj }, nom: { texte: nomSaisi, donnees: tNom } }
+                    cibleErreur: 'nom',
+                    contexteAccord: { adjectif: { texte: adjSaisi, donnees: tAdj }, nom: { texte: nomSaisi, donnees: tNom }, cibleErreur: 'nom' }
                 };
             }
         }
@@ -862,11 +1058,12 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
             const attrSaisi = tAttr ? (texteSaisiPourToken(tAttr) || tAttr.texte) : '';
             if (idToken === idAttr && tSujet) {
                 return {
-                    explication: `L'attribut doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie le genre et le nombre.`,
+                    explication: `L'adjectif attribut « ${attrSaisi} » doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie le genre et le nombre.`,
                     titreAide: 'Accord sujet-attribut',
                     memo: `L'attribut du sujet s'accorde en genre et en nombre avec le sujet.`,
                     parcoursType: 'accord_adjectif_nom',
-                    contexteAccord: { adjectif: { texte: attrSaisi, donnees: tAttr }, nom: { texte: sujetSaisi, donnees: tSujet } }
+                    cibleErreur: 'attribut',
+                    contexteAccord: { adjectif: { texte: attrSaisi, donnees: tAttr }, nom: { texte: sujetSaisi, donnees: tSujet }, sujet: { texte: sujetSaisi, donnees: tSujet }, cibleErreur: 'attribut' }
                 };
             }
         }
@@ -880,11 +1077,12 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
             const partSaisi = tPart ? (texteSaisiPourToken(tPart) || tPart.texte) : '';
             if (idToken === idPart && tSujet) {
                 return {
-                    explication: `Le participe passé doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie la terminaison.`,
+                    explication: `Le participe passé « ${partSaisi} » doit s'accorder avec le sujet « ${sujetSaisi} ». Vérifie la terminaison.`,
                     titreAide: 'Accord participe passé',
                     memo: `Un participe passé employé avec « être » s'accorde en genre et en nombre avec le sujet.`,
-                    parcoursType: 'accord_sujet_verbe',
-                    contexteAccord: { sujet: { texte: sujetSaisi, donnees: tSujet }, verbe: { texte: partSaisi, donnees: tPart } }
+                    parcoursType: 'accord_sujet_participe',
+                    cibleErreur: 'participe',
+                    contexteAccord: { sujet: { texte: sujetSaisi, donnees: tSujet }, participe: { texte: partSaisi, donnees: tPart }, verbe: { texte: partSaisi, donnees: tPart }, cibleErreur: 'participe' }
                 };
             }
         }
@@ -901,7 +1099,8 @@ enrichirExplicationAccord(motSaisi, motAttendu, index = -1, tokensReference = []
                     titreAide: 'Accord sujet-verbe',
                     memo: `Pour accorder le verbe avec son sujet, identifie le sujet (qui ?) puis choisis la terminaison qui convient.`,
                     parcoursType: 'accord_sujet_verbe',
-                    contexteAccord: { sujet: { texte: sujetSaisi, donnees: t }, verbe: { texte: verbeSaisi, donnees: tokenDetail } }
+                    cibleErreur: 'verbe',
+                    contexteAccord: { sujet: { texte: sujetSaisi, donnees: t }, verbe: { texte: verbeSaisi, donnees: tokenDetail }, cibleErreur: 'verbe' }
                 };
             }
         }
@@ -1024,8 +1223,25 @@ enrichirExplicationOrale(motSaisi, motAttendu, index = -1, tokensReference = [])
         }
     }
 
+    // --- Consonne finale muette inhérente (vieu -> vieux, cha -> chat) ---
+    // Prioritaire sur l'accord : si le mot attendu est au singulier, ce n'est pas une question de pluriel.
+    let consonneMuetteDetectee = false;
+    if (base1 !== base2 && categories && typeof categories.detecterConsonneMuetteFinale === 'function') {
+        const entreeCorpusMuette = this.obtenirEntreeCorpusDetailleReference();
+        const tokenCorpusMuette = (entreeCorpusMuette && Array.isArray(entreeCorpusMuette.tokensLexicaux) && index >= 0)
+            ? (entreeCorpusMuette.tokensLexicaux[index] || null)
+            : null;
+        const resultatMuette = categories.detecterConsonneMuetteFinale(motSaisi, motAttendu, tokenCorpusMuette);
+        if (resultatMuette) {
+            consonneMuetteDetectee = true;
+            candidats.push({ ...resultatMuette, categorie: 'consonne_muette_finale', priorite: 66 });
+        }
+    }
+
     // --- Accords basés sur les dépendances du corpus ---
-    const resultatAccord = this.enrichirExplicationAccord(motSaisi, motAttendu, index, tokensReference);
+    const resultatAccord = consonneMuetteDetectee
+        ? null
+        : this.enrichirExplicationAccord(motSaisi, motAttendu, index, tokensReference);
     if (resultatAccord) candidats.push({ ...resultatAccord, categorie: 'accord', priorite: 60 });
 
     // --- Conjugaison ---
@@ -1213,6 +1429,18 @@ enrichirExplicationOrale(motSaisi, motAttendu, index = -1, tokensReference = [])
                 categorie: 'participe_finale_muette',
                 priorite: 45
             });
+        }
+    }
+
+    // --- Oubli de lettre interne (au milieu du mot, hors 1re lettre et hors terminaisons) ---
+    if (base1 !== base2 && categories && typeof categories.detecterOubliLettreInterne === 'function') {
+        const entreeCorpusInterne = this.obtenirEntreeCorpusDetailleReference();
+        const tokenCorpusInterne = (entreeCorpusInterne && Array.isArray(entreeCorpusInterne.tokensLexicaux) && index >= 0)
+            ? (entreeCorpusInterne.tokensLexicaux[index] || null)
+            : null;
+        const resultatInterne = categories.detecterOubliLettreInterne(motSaisi, motAttendu, tokenCorpusInterne, this.analyseur);
+        if (resultatInterne) {
+            candidats.push({ ...resultatInterne, categorie: 'oubli_lettre_interne', priorite: 62 });
         }
     }
 

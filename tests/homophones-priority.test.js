@@ -51,7 +51,68 @@ for (const file of files) {
 }
 
 const dictData = JSON.parse(fs.readFileSync('refs/dictionnaire.json', 'utf8'));
-const corpus1 = JSON.parse(fs.readFileSync('corpus/Corpus1.json', 'utf8'));
+const corpus1 = [
+    {
+        phrase_originale: 'Elle est allée à la bibliothèque ce matin.',
+        phrase_normalisee: 'Elle est allée à la bibliothèque ce matin.',
+        langue: 'fr',
+        tokens: [
+            { id: 1, texte: 'Elle', lemme: 'elle', nature: 'pronom', genre: 'f', nombre: 's', personne: '3', fonction: 'sujet', dependance: { type: 'nsubj', cible: 3 }, homophone_de: null },
+            { id: 2, texte: 'est', lemme: 'être', nature: 'verbe', genre: null, nombre: 's', personne: '3', mode: 'indicatif', temps: 'présent', fonction: 'auxiliaire', dependance: { type: 'aux', cible: 3 }, homophone_de: ['et'] },
+            { id: 3, texte: 'allée', lemme: 'aller', nature: 'verbe', genre: 'f', nombre: 's', personne: null, mode: 'participe', temps: 'passé', fonction: 'verbe principal', dependance: { type: 'root', cible: 0 }, homophone_de: null },
+            { id: 4, texte: 'à', lemme: 'à', nature: 'préposition', genre: null, nombre: null, personne: null, fonction: null, dependance: { type: 'case', cible: 6 }, homophone_de: ['a'] },
+            { id: 5, texte: 'la', lemme: 'le', nature: 'déterminant', genre: 'f', nombre: 's', personne: null, fonction: null, dependance: { type: 'det', cible: 6 }, homophone_de: ['là'] },
+            { id: 6, texte: 'bibliothèque', lemme: 'bibliothèque', nature: 'nom', genre: 'f', nombre: 's', personne: null, fonction: 'complément circonstanciel', dependance: { type: 'obl', cible: 3 }, homophone_de: null },
+            { id: 7, texte: 'ce', lemme: 'ce', nature: 'déterminant', genre: 'm', nombre: 's', personne: null, fonction: null, dependance: { type: 'det', cible: 8 }, homophone_de: ['se'] },
+            { id: 8, texte: 'matin', lemme: 'matin', nature: 'nom', genre: 'm', nombre: 's', personne: null, fonction: 'complément circonstanciel', dependance: { type: 'obl', cible: 3 }, homophone_de: null },
+            { id: 9, texte: '.', lemme: '.', nature: 'ponctuation', genre: null, nombre: null, personne: null, fonction: null, dependance: { type: 'punct', cible: 3 }, homophone_de: null }
+        ],
+        relations_globales: [
+            { type: 'accord_sujet_verbe', sujet: 1, verbe: 2, correct: true },
+            { type: 'accord_sujet_participe', sujet: 1, participe: 3, correct: true },
+            { type: 'accord_determinant_nom', det: 5, nom: 6, correct: true },
+            { type: 'accord_determinant_nom', det: 7, nom: 8, correct: true }
+        ]
+    },
+    {
+        phrase_originale: 'Son sac et ses livres sont restés sur le bureau.',
+        phrase_normalisee: 'Son sac et ses livres sont restés sur le bureau.',
+        langue: 'fr',
+        tokens: [
+            { id: 1, texte: 'Son', lemme: 'son', nature: 'déterminant', genre: 'm', nombre: 's', dependance: { type: 'det', cible: 2 }, homophone_de: ['sont'] },
+            { id: 2, texte: 'sac', lemme: 'sac', nature: 'nom', genre: 'm', nombre: 's', dependance: { type: 'nsubj', cible: 7 }, homophone_de: null },
+            { id: 3, texte: 'et', lemme: 'et', nature: 'conjonction', dependance: { type: 'mark', cible: 5 }, homophone_de: ['est'] },
+            { id: 4, texte: 'ses', lemme: 'son', nature: 'déterminant', genre: 'm', nombre: 'p', dependance: { type: 'det', cible: 5 }, homophone_de: ['ces', "c'est"] },
+            { id: 5, texte: 'livres', lemme: 'livre', nature: 'nom', genre: 'm', nombre: 'p', dependance: { type: 'nsubj', cible: 7 }, homophone_de: null },
+            { id: 6, texte: 'sont', lemme: 'être', nature: 'verbe', nombre: 'p', personne: '3', mode: 'indicatif', temps: 'présent', dependance: { type: 'aux', cible: 7 }, homophone_de: ['son'] },
+            { id: 7, texte: 'restés', lemme: 'rester', nature: 'verbe', genre: 'm', nombre: 'p', mode: 'participe', temps: 'passé', dependance: { type: 'root', cible: 0 }, homophone_de: null },
+            { id: 8, texte: 'sur', lemme: 'sur', nature: 'préposition', dependance: { type: 'case', cible: 10 }, homophone_de: null },
+            { id: 9, texte: 'le', lemme: 'le', nature: 'déterminant', genre: 'm', nombre: 's', dependance: { type: 'det', cible: 10 }, homophone_de: null },
+            { id: 10, texte: 'bureau', lemme: 'bureau', nature: 'nom', genre: 'm', nombre: 's', dependance: { type: 'obl', cible: 7 }, homophone_de: null },
+            { id: 11, texte: '.', lemme: '.', nature: 'ponctuation', dependance: { type: 'punct', cible: 7 }, homophone_de: null }
+        ],
+        relations_globales: []
+    },
+    {
+        phrase_originale: 'Il faut que tu saches où se cache le trésor.',
+        phrase_normalisee: 'Il faut que tu saches où se cache le trésor.',
+        langue: 'fr',
+        tokens: [
+            { id: 1, texte: 'Il', lemme: 'il', nature: 'pronom', genre: 'm', nombre: 's', personne: '3', dependance: { type: 'expl', cible: 2 }, homophone_de: null },
+            { id: 2, texte: 'faut', lemme: 'falloir', nature: 'verbe', nombre: 's', personne: '3', mode: 'indicatif', temps: 'présent', dependance: { type: 'root', cible: 0 }, homophone_de: null },
+            { id: 3, texte: 'que', lemme: 'que', nature: 'conjonction', dependance: { type: 'mark', cible: 5 }, homophone_de: null },
+            { id: 4, texte: 'tu', lemme: 'tu', nature: 'pronom', nombre: 's', personne: '2', dependance: { type: 'nsubj', cible: 5 }, homophone_de: null },
+            { id: 5, texte: 'saches', lemme: 'savoir', nature: 'verbe', nombre: 's', personne: '2', mode: 'subjonctif', temps: 'présent', dependance: { type: 'ccomp', cible: 2 }, homophone_de: null },
+            { id: 6, texte: 'où', lemme: 'où', nature: 'pronom', dependance: { type: 'obl', cible: 8 }, homophone_de: ['ou'] },
+            { id: 7, texte: 'se', lemme: 'se', nature: 'pronom', dependance: { type: 'expl', cible: 8 }, homophone_de: ['ce'] },
+            { id: 8, texte: 'cache', lemme: 'cacher', nature: 'verbe', nombre: 's', personne: '3', mode: 'indicatif', temps: 'présent', dependance: { type: 'ccomp', cible: 5 }, homophone_de: null },
+            { id: 9, texte: 'le', lemme: 'le', nature: 'déterminant', genre: 'm', nombre: 's', dependance: { type: 'det', cible: 10 }, homophone_de: null },
+            { id: 10, texte: 'trésor', lemme: 'trésor', nature: 'nom', genre: 'm', nombre: 's', dependance: { type: 'nsubj', cible: 8 }, homophone_de: null },
+            { id: 11, texte: '.', lemme: '.', nature: 'ponctuation', dependance: { type: 'punct', cible: 2 }, homophone_de: null }
+        ],
+        relations_globales: []
+    }
+];
 
 describe('Homophones Priority & Detection - Couverture Complète', () => {
     it('prioritise toujours les homophones au rang 0 par rapport aux accords', () => {

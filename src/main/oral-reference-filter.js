@@ -11,6 +11,8 @@
             let memo;
             let parcoursType;
             let contexteAccord;
+            let modeVerbe;
+            let cibleErreur;
 
             if (estPonctuation) {
                 explication = 'Une phrase se termine toujours par une ponctuation (un point ., un point d\'interrogation ? ou un point d\'exclamation !). Ajoute la ponctuation manquante.';
@@ -23,7 +25,8 @@
                     || (enrichi && enrichi.parcoursType && enrichi.parcoursType.startsWith('homophone_'))
                     || /homophone/i.test(String((enrichi && enrichi.explication) || ''));
                 const estEnrichiSpecifique = estHomophone
-                    || /accent|cédille|conjugaison|lettre manquante|lettre en trop|leur|orthographe|accord|nature du mot/i.test(titreEnrichi);
+                    || Boolean(enrichi && enrichi.parcoursType)
+                    || /accent|cédille|conjugaison|infinitif|participe|lettre manquante|lettre en trop|leur|orthographe|accord|nature du mot|astuce/i.test(titreEnrichi);
 
                 if (enrichi && estEnrichiSpecifique) {
                     explication = enrichi.explication;
@@ -31,6 +34,8 @@
                     memo = enrichi.memo;
                     parcoursType = enrichi.parcoursType || null;
                     contexteAccord = enrichi.contexteAccord || null;
+                    modeVerbe = enrichi.modeVerbe || null;
+                    cibleErreur = enrichi.cibleErreur || (enrichi.contexteAccord && enrichi.contexteAccord.cibleErreur) || null;
                 } else {
                     const blocsOrdonnes = (aideDetaillee && Array.isArray(aideDetaillee.blocsOrdonnes)) ? aideDetaillee.blocsOrdonnes : [];
                     const blocAstuce = (enrichi && enrichi.explication)
@@ -40,6 +45,8 @@
                     explication = [...blocsOrdonnes, blocAstuce].filter(Boolean).join(' ').trim() || (enrichi && enrichi.explication);
                     titreAide = (aideDetaillee && aideDetaillee.titreAide) || (enrichi && enrichi.titreAide);
                     memo = (aideDetaillee && aideDetaillee.memo) || (enrichi && enrichi.memo);
+                    modeVerbe = (enrichi && enrichi.modeVerbe) || null;
+                    cibleErreur = (enrichi && enrichi.cibleErreur) || null;
                 }
 
                 const estParcoursHomophone = parcoursType && parcoursType.startsWith('homophone_');
@@ -52,12 +59,9 @@
             const catOral = (typeof window !== 'undefined' && window.AbeAnalyseurCategories)
                 || (typeof globalThis !== 'undefined' && globalThis.AbeAnalyseurCategories)
                 || null;
-            const estParcoursHomophoneFinal = parcoursType && parcoursType.startsWith('homophone_');
-            const regle = (parcoursType && !estParcoursHomophoneFinal)
-                ? ''
-                : (catOral && typeof catOral.obtenirReglePourTitreAide === 'function')
-                    ? catOral.obtenirReglePourTitreAide(titreAide)
-                    : 'La phrase attendue doit être reproduite exactement, mot par mot et ponctuation comprise.';
+            const regle = (catOral && typeof catOral.obtenirReglePourTitreAide === 'function')
+                ? catOral.obtenirReglePourTitreAide(titreAide)
+                : 'La phrase attendue doit être reproduite exactement, mot par mot et ponctuation comprise.';
 
             return {
                 type: estPonctuation ? 'ponctuation_finale' : 'reference_orale_attendue',
@@ -71,7 +75,9 @@
                 titreAide,
                 memo,
                 parcoursType: parcoursType || null,
-                contexteAccord: contexteAccord || null
+                contexteAccord: contexteAccord || null,
+                ...(modeVerbe ? { modeVerbe } : {}),
+                ...(cibleErreur ? { cibleErreur } : {})
             };
         },
 
@@ -138,6 +144,29 @@
                 })
                 : [];
 
+            const alignement = (typeof this.calculerAlignementLexical === 'function')
+                ? this.calculerAlignementLexical(tokensSaisis, tokensReference)
+                : null;
+            const refVersSaisiRawIndex = new Map();
+            const refVersSaisiToken = new Map();
+            if (alignement && Array.isArray(alignement.operations)) {
+                const refMetaList = Array.isArray(alignement.reference) ? alignement.reference : [];
+                const saisiMetaList = Array.isArray(alignement.saisis) ? alignement.saisis : [];
+                alignement.operations.forEach((op) => {
+                    if (!op || (op.type !== 'match' && op.type !== 'replace')) return;
+                    const refMeta = refMetaList[op.referenceIndex] || null;
+                    const saisiMeta = saisiMetaList[op.saisiIndex] || null;
+                    if (!refMeta || !saisiMeta || !Number.isInteger(refMeta.indexMot)) return;
+                    const rawIdx = Number.isInteger(saisiMeta.rawIndex) ? saisiMeta.rawIndex : saisiMeta.indexMot;
+                    if (Number.isInteger(rawIdx)) {
+                        refVersSaisiRawIndex.set(refMeta.indexMot, rawIdx);
+                    }
+                    if (saisiMeta.token) {
+                        refVersSaisiToken.set(refMeta.indexMot, saisiMeta.token);
+                    }
+                });
+            }
+
             positionsDivergentes.forEach((index) => {
                 const omission = omissionsParIndex.get(index);
                 if (omission) {
@@ -151,16 +180,22 @@
                     return;
                 }
 
-                const tokenSaisi = tokenSaisiParIndexMot(index) || null;
+                const tokenSaisi = refVersSaisiToken.get(index) || tokenSaisiParIndexMot(index) || null;
                 const tokenAttendu = tokenRefParIndexMot(index) || null;
                 if (!tokenAttendu || !tokenAttendu.texte) return;
 
                 const erreur = this.construireErreurReferenceOrale(index, tokenSaisi, tokenAttendu, tokensReference);
+                const rawIdx = refVersSaisiRawIndex.has(index) ? refVersSaisiRawIndex.get(index) : index;
+                const targetIdx = (Number.isInteger(rawIdx) && rawIdx >= 0 && rawIdx < mots.length) ? rawIdx : index;
+                erreur.position = targetIdx;
+                erreur.indexDebut = targetIdx;
+                erreur.indexFin = targetIdx;
+                erreur.indexReference = index;
                 erreurs.push(erreur);
 
-                if (mots[index]) {
-                    const erreursMot = Array.isArray(mots[index].erreurs) ? [...mots[index].erreurs, erreur] : [erreur];
-                    mots[index] = { ...mots[index], erreurs: erreursMot };
+                if (mots[targetIdx]) {
+                    const erreursMot = Array.isArray(mots[targetIdx].erreurs) ? [...mots[targetIdx].erreurs, erreur] : [erreur];
+                    mots[targetIdx] = { ...mots[targetIdx], erreurs: erreursMot };
                 }
             });
 

@@ -200,10 +200,10 @@
                 const estAccordSujetVerbe = !estInfinitif && sujetCorpus;
                 return {
                     explication: estInfinitif
-                        ? `Conjugaison : tu as écrit « ${motSaisi} » au lieu de « ${motAttendu} ». ${indiceStr || 'Ce verbe doit être à l\'infinitif.'}`
+                        ? `Conjugaison : vérifie la forme de « ${motSaisi} ». ${indiceStr || 'Ce verbe doit être à l\'infinitif.'}`
                         : estAccordSujetVerbe
                             ? `Le verbe doit s'accorder avec le sujet « ${sujetCorpus.texte} ». Vérifie la terminaison.${infinitifHint}`
-                            : `Conjugaison : tu as écrit « ${motSaisi} » au lieu de « ${motAttendu} ». ${indiceStr || reglePersonne || 'Identifie le sujet du verbe puis choisis la bonne terminaison.'}${infinitifHint}`,
+                            : `Conjugaison : vérifie la terminaison de « ${motSaisi} ». ${indiceStr || reglePersonne || 'Identifie le sujet du verbe puis choisis la bonne terminaison.'}${infinitifHint}`,
                     titreAide: estInfinitif ? 'Infinitif du verbe' : estAccordSujetVerbe ? 'Accord sujet-verbe' : 'Conjugaison verbe',
                     memo: estInfinitif ? `Après aller, vouloir, pouvoir, devoir... le verbe suivant est à l'infinitif.` : estAccordSujetVerbe ? `Pour accorder le verbe avec son sujet, identifie le sujet (qui ?) puis choisis la terminaison qui convient.` : `Pour un verbe, identifie le sujet puis choisis la bonne terminaison.`,
                     parcoursType: estAccordSujetVerbe ? 'accord_sujet_verbe' : 'conjugaison_verbe',

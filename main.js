@@ -438,6 +438,10 @@ class AbeApplication {
             return;
         }
 
+        if (!this.corpusDetailleCharge && typeof this.obtenirIdDicteeDepuisUrl === 'function' && this.obtenirIdDicteeDepuisUrl()) {
+            await this.chargerCorpusDetaille();
+        }
+
         const phraseReferenceOrale = this.obtenirPhraseReferenceOrale();
         const reconnaissanceOrale = this.reconnaitrePhraseOrale(phrase, phraseReferenceOrale);
         if (phraseReferenceOrale && !reconnaissanceOrale.reconnue) {
@@ -495,6 +499,7 @@ class AbeApplication {
 
             this.mettreAJourModalAnalyse('Application des corrections de dictée…', 92);
             await this.attendreRendu();
+            this.motsAnalyse = (resultat && Array.isArray(resultat.mots)) ? resultat.mots : [];
             resultat = this.appliquerFiltreReferenceOrale(phrase, resultat);
 
             const rawMots = (resultat && Array.isArray(resultat.mots)) ? resultat.mots : [];
@@ -572,7 +577,8 @@ class AbeApplication {
         const nature = String(token.nature || '').toLowerCase();
         const texte = String(token.texte || '').trim();
         if (nature === 'ponctuation') return true;
-        return /^[.,;:!?]$/.test(texte);
+        if (/^-t-$/i.test(texte)) return true;
+        return /^[.,;:!?"«»()\[\]{}\-–—]+$/.test(texte);
     }
 
     construireIndexCorpusDetaille(phraseObj = {}) {
@@ -602,8 +608,174 @@ class AbeApplication {
         });
 
         const relationsGlobales = Array.isArray(phraseObj.relations_globales)
-            ? phraseObj.relations_globales
+            ? [...phraseObj.relations_globales]
             : [];
+        const hasRel = (type, k1, v1, k2, v2) => relationsGlobales.some(
+            (r) => r && r.type === type && Number(r[k1]) === Number(v1) && Number(r[k2]) === Number(v2)
+        );
+
+        // Synchronisation bidirectionnelle dépendances <-> relations_globales
+        relationsGlobales.forEach((rel) => {
+            if (!rel || typeof rel !== 'object') return;
+            if ((rel.type === 'accord_determinant_nom' || rel.type === 'accord_det_nom') && rel.det && rel.nom) {
+                const tDet = tokensParId.get(Number(rel.det));
+                if (tDet && (!tDet.dependance || !tDet.dependance.cible)) {
+                    tDet.dependance = { type: 'det', cible: Number(rel.nom) };
+                }
+            }
+            if (rel.type === 'accord_adjectif_nom' && rel.adj && rel.nom) {
+                const tAdj = tokensParId.get(Number(rel.adj));
+                if (tAdj && (!tAdj.dependance || !tAdj.dependance.cible)) {
+                    tAdj.dependance = { type: 'amod', cible: Number(rel.nom) };
+                }
+            }
+            if (rel.type === 'accord_sujet_verbe' && rel.sujet && rel.verbe) {
+                const tSuj = tokensParId.get(Number(rel.sujet));
+                if (tSuj && (!tSuj.dependance || !tSuj.dependance.cible)) {
+                    tSuj.dependance = { type: 'nsubj', cible: Number(rel.verbe) };
+                }
+            }
+        });
+
+        tokensLexicaux.forEach((tok, idxLex) => {
+            if (!tok) return;
+            const idTok = Number(tok.id);
+            let nature = String(tok.nature || '').toLowerCase();
+            const fonction = String(tok.fonction || '').toLowerCase();
+            let depType = String((tok.dependance && tok.dependance.type) || '').toLowerCase();
+            let cibleId = Number((tok.dependance && tok.dependance.cible) || 0);
+            const texteNorm = String(tok.texte || '').toLowerCase().trim();
+
+            // Normalisation des articles contractés ("du", "au", "aux") devant un nom
+            if (['du', 'au', 'aux'].includes(texteNorm)) {
+                let nomCible = cibleId > 0 ? tokensParId.get(cibleId) : null;
+                if (!nomCible || !String(nomCible.nature || '').toLowerCase().includes('nom')) {
+                    for (let j = idxLex + 1; j < Math.min(tokensLexicaux.length, idxLex + 4); j += 1) {
+                        const cand = tokensLexicaux[j];
+                        if (cand && String(cand.nature || '').toLowerCase().includes('nom')) {
+                            nomCible = cand;
+                            break;
+                        }
+                    }
+                }
+                if (nomCible && String(nomCible.nature || '').toLowerCase().includes('nom')) {
+                    tok.nature = 'déterminant';
+                    nature = 'déterminant';
+                    cibleId = Number(nomCible.id);
+                    depType = 'det';
+                    tok.dependance = { type: 'det', cible: cibleId };
+                    if (!tok.nombre) tok.nombre = texteNorm === 'aux' ? 'p' : 's';
+                    if (!tok.genre) tok.genre = nomCible.genre || 'm';
+                    if (!hasRel('accord_determinant_nom', 'det', idTok, 'nom', cibleId)) {
+                        relationsGlobales.push({ type: 'accord_determinant_nom', det: idTok, nom: cibleId, correct: true });
+                    }
+                }
+            }
+
+            // Héritage du genre et du nombre de l'antécédent sur les pronoms relatifs ("qui", "que", "qu'")
+            if (nature.includes('pronom') && ['qui', 'que', "qu'"].includes(texteNorm) && (!tok.genre || !tok.nombre)) {
+                let antecedent = null;
+                for (let j = idxLex - 1; j >= 0; j -= 1) {
+                    const prev = tokensLexicaux[j];
+                    if (!prev) continue;
+                    const natPrev = String(prev.nature || '').toLowerCase();
+                    if (natPrev.includes('nom') || (natPrev.includes('pronom') && prev.genre && prev.nombre)) {
+                        antecedent = prev;
+                        break;
+                    }
+                }
+                if (antecedent) {
+                    if (!tok.genre && antecedent.genre) tok.genre = antecedent.genre;
+                    if (!tok.nombre && antecedent.nombre) tok.nombre = antecedent.nombre;
+                }
+            }
+
+            if ((nature.includes('déterminant') || nature.includes('determinant') || depType === 'det') && cibleId <= 0) {
+                for (let j = idxLex + 1; j < Math.min(tokensLexicaux.length, idxLex + 4); j += 1) {
+                    const cand = tokensLexicaux[j];
+                    if (cand && String(cand.nature || '').toLowerCase().includes('nom')) {
+                        cibleId = Number(cand.id);
+                        tok.dependance = { type: 'det', cible: cibleId };
+                        break;
+                    }
+                }
+            }
+
+            if ((depType === 'det' || nature.includes('déterminant') || nature.includes('determinant')) && cibleId > 0) {
+                const tCible = tokensParId.get(cibleId);
+                if (tCible && String(tCible.nature || '').toLowerCase().includes('nom')) {
+                    if (!hasRel('accord_determinant_nom', 'det', idTok, 'nom', cibleId)) {
+                        relationsGlobales.push({ type: 'accord_determinant_nom', det: idTok, nom: cibleId, correct: true });
+                    }
+                }
+            }
+
+            if ((depType === 'amod' || (nature.includes('adjectif') && !fonction.includes('attribut'))) && cibleId > 0) {
+                const tCible = tokensParId.get(cibleId);
+                if (tCible && String(tCible.nature || '').toLowerCase().includes('nom')) {
+                    if (!hasRel('accord_adjectif_nom', 'adj', idTok, 'nom', cibleId)) {
+                        relationsGlobales.push({ type: 'accord_adjectif_nom', adj: idTok, nom: cibleId, correct: true });
+                    }
+                }
+            }
+
+            if (depType === 'nsubj' && cibleId > 0) {
+                const tCible = tokensParId.get(cibleId);
+                if (tCible) {
+                    const natCible = String(tCible.nature || '').toLowerCase();
+                    const modeCible = String(tCible.mode || '').toLowerCase();
+                    if (natCible.includes('verbe') && modeCible.includes('participe')) {
+                        if (!hasRel('accord_sujet_participe', 'sujet', idTok, 'participe', cibleId)) {
+                            relationsGlobales.push({ type: 'accord_sujet_participe', sujet: idTok, participe: cibleId, correct: true });
+                        }
+                    } else if (natCible.includes('verbe')) {
+                        if (!hasRel('accord_sujet_verbe', 'sujet', idTok, 'verbe', cibleId)) {
+                            relationsGlobales.push({ type: 'accord_sujet_verbe', sujet: idTok, verbe: cibleId, correct: true });
+                        }
+                    } else if (natCible.includes('adjectif')) {
+                        if (!hasRel('accord_sujet_attribut', 'sujet', idTok, 'attribut', cibleId)) {
+                            relationsGlobales.push({ type: 'accord_sujet_attribut', sujet: idTok, attribut: cibleId, correct: true });
+                        }
+                    }
+                }
+            }
+
+            if (depType === 'conj' && cibleId > 0) {
+                const tCoord = tokensParId.get(cibleId);
+                if (tCoord && tCoord.dependance && String(tCoord.dependance.type || '').toLowerCase() === 'nsubj' && Number(tCoord.dependance.cible) > 0) {
+                    const idVerbe = Number(tCoord.dependance.cible);
+                    const tVerbe = tokensParId.get(idVerbe);
+                    const modeVerbe = tVerbe ? String(tVerbe.mode || '').toLowerCase() : '';
+                    if (modeVerbe.includes('participe')) {
+                        if (!hasRel('accord_sujet_participe', 'sujet', idTok, 'participe', idVerbe)) {
+                            relationsGlobales.push({ type: 'accord_sujet_participe', sujet: idTok, participe: idVerbe, correct: true });
+                        }
+                    } else if (!hasRel('accord_sujet_verbe', 'sujet', idTok, 'verbe', idVerbe)) {
+                        relationsGlobales.push({ type: 'accord_sujet_verbe', sujet: idTok, verbe: idVerbe, correct: true });
+                    }
+                }
+            }
+
+            if (nature.includes('adjectif') && (fonction.includes('attribut') || depType === 'xcomp' || depType === 'acomp')) {
+                let idSujet = 0;
+                if (cibleId > 0) {
+                    const tGouv = tokensParId.get(cibleId);
+                    if (tGouv && (String(tGouv.nature || '').toLowerCase().includes('nom') || String(tGouv.nature || '').toLowerCase().includes('pronom'))) {
+                        idSujet = cibleId;
+                    } else {
+                        const sujTok = tokensLexicaux.find((t) => t && t.dependance && t.dependance.type === 'nsubj' && Number(t.dependance.cible) === cibleId);
+                        if (sujTok) idSujet = Number(sujTok.id);
+                    }
+                }
+                if (!idSujet) {
+                    const sujFallback = tokensLexicaux.find((t) => t && String(t.fonction || '').toLowerCase().includes('sujet'));
+                    if (sujFallback) idSujet = Number(sujFallback.id);
+                }
+                if (idSujet > 0 && !hasRel('accord_sujet_attribut', 'sujet', idSujet, 'attribut', idTok)) {
+                    relationsGlobales.push({ type: 'accord_sujet_attribut', sujet: idSujet, attribut: idTok, correct: true });
+                }
+            }
+        });
 
         return {
             ...phraseObj,
@@ -677,6 +849,19 @@ class AbeApplication {
             return window.AbeMainOralPedagogy.obtenirAideDetailleeTokenReference.call(this, indexMot, tokenAttendu);
         }
         return null;
+    }
+
+    obtenirIdDicteeDepuisUrl() {
+        if (window.AbeMainOralPedagogy && typeof window.AbeMainOralPedagogy.obtenirIdDicteeDepuisUrl === 'function') {
+            return window.AbeMainOralPedagogy.obtenirIdDicteeDepuisUrl.call(this);
+        }
+        return '';
+    }
+
+    indexerEntreesCorpusDetaille(entrees = []) {
+        if (window.AbeMainOralPedagogy && typeof window.AbeMainOralPedagogy.indexerEntreesCorpusDetaille === 'function') {
+            return window.AbeMainOralPedagogy.indexerEntreesCorpusDetaille.call(this, entrees);
+        }
     }
 
     async chargerCorpusDetaille() {
@@ -951,6 +1136,14 @@ class AbeApplication {
             : phrase;
         const utterance = new SpeechSynthesisUtterance(texteSynthese);
         utterance.lang = 'fr-FR';
+        if (typeof window !== 'undefined'
+            && window.AbeSpeechUtils
+            && typeof window.AbeSpeechUtils.obtenirMeilleureVoixFrancaise === 'function') {
+            const voix = window.AbeSpeechUtils.obtenirMeilleureVoixFrancaise(this.syntheseVocale);
+            if (voix) {
+                utterance.voice = voix;
+            }
+        }
         utterance.rate = 0.83;
         utterance.pitch = 1;
         this.syntheseVocale.speak(utterance);

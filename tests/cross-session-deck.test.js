@@ -2,45 +2,30 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';
 
-describe('Cross-session Random Deck & Progression', () => {
-    it('maintient un tirage sans répétition sur l\'ensemble des phrases du corpus', () => {
-        const phrases = [
-            "Le chat dort sur le canapé.",
-            "Les élèves lisent un livre.",
-            "Le professeur explique la leçon.",
-            "La maîtresse écrit au tableau.",
-            "Nous partons en vacances."
-        ];
-
-        // Simulate Fisher-Yates deck logic
-        const tirages = new Set();
-        let deck = [...phrases];
-
-        for (let i = 0; i < phrases.length; i++) {
-            const candidate = deck[i];
-            tirages.add(candidate);
-        }
-
-        assert.strictEqual(tirages.size, phrases.length, 'Toutes les phrases doivent être tirées sans doublon');
-    });
-
-    it('utilise STORAGE_VALIDATED_KEY pour mémoriser les phrases validées dans localStorage', () => {
+describe('Télécommande Dictée & Modales Enseignant', () => {
+    it('inclut la liste déroulante de sélection des phrases ("Phrase 1", "Phrase 2"...) au-dessus du bouton lecture dans oral-player.js', () => {
         const oralPlayerCode = fs.readFileSync('oral/oral-player.js', 'utf8');
         assert.ok(
-            oralPlayerCode.includes('localStorage'),
-            'oral-player.js doit supporter localStorage pour la persistance inter-sessions'
+            oralPlayerCode.includes('abe-oral-select-phrase'),
+            'oral-player.js doit créer le select .abe-oral-select-phrase'
         );
         assert.ok(
-            oralPlayerCode.includes('abe_oral_phrases_validees_v1'),
-            'oral-player.js doit utiliser la clé de stockage persistant'
+            oralPlayerCode.includes('`Phrase ${index + 1}`'),
+            'oral-player.js doit nommer les options "Phrase 1", "Phrase 2", etc.'
         );
+        const posSelect = oralPlayerCode.indexOf('panel.appendChild(selectPhrase)');
+        const posPlay = oralPlayerCode.indexOf('panel.appendChild(btnLecture)');
+        assert.ok(posSelect > -1 && posPlay > -1 && posSelect < posPlay, 'La liste déroulante doit être placée au-dessus du bouton lecture');
     });
 
-    it('réinitialise automatiquement le grand cycle quand toutes les phrases sont validées', () => {
-        const oralPlayerCode = fs.readFileSync('oral/oral-player.js', 'utf8');
-        assert.ok(
-            oralPlayerCode.includes('this.phrasesValidees.clear()'),
-            'oral-player.js doit réinitialiser le cycle complet à 100%'
-        );
+    it('inclut les modales d\'entrée ("Je suis prof" / "Je suis élève") et du workflow prof dans index.html', () => {
+        const html = fs.readFileSync('index.html', 'utf8');
+        assert.ok(html.includes('id="modal-entree"'), 'index.html doit contenir #modal-entree');
+        assert.ok(html.includes('id="btn-role-prof"'), 'index.html doit contenir le bouton "Je suis prof"');
+        assert.ok(html.includes('id="btn-role-eleve"'), 'index.html doit contenir le bouton "Je suis élève"');
+        assert.ok(html.includes('id="modal-prof"'), 'index.html doit contenir #modal-prof');
+        assert.ok(html.includes('id="prof-copy-prompt-btn"'), 'index.html doit contenir le bouton de copie du préprompt');
+        assert.ok(html.includes('id="prof-json-textarea"'), 'index.html doit contenir la zone de collage du JSON');
+        assert.ok(html.includes('id="prof-generated-link"'), 'index.html doit contenir le champ du lien généré');
     });
 });

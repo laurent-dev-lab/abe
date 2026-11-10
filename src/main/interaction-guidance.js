@@ -82,11 +82,26 @@
             if (this.erreurActuelle.contexteAccord) {
                 const ctx = this.erreurActuelle.contexteAccord;
                 const entreeCorpus = this.obtenirEntreeCorpusDetailleReference();
-                const indexParId = entreeCorpus && (entreeCorpus.tokenIndexParId instanceof Map)
+                const indexParIdCorpus = entreeCorpus && (entreeCorpus.tokenIndexParId instanceof Map)
                     ? entreeCorpus.tokenIndexParId
                     : null;
-                if (indexParId) {
-                    contexte.tokenIndexParId = indexParId;
+                const lexicauxSaisis = (typeof this.extraireTokensLexicauxAvecMeta === 'function' && Array.isArray(this.motsAnalyse))
+                    ? this.extraireTokensLexicauxAvecMeta(this.motsAnalyse)
+                    : [];
+                const convertirLexicalVersRawIndex = (lexIdx) => {
+                    if (!Number.isInteger(lexIdx) || lexIdx < 0) return lexIdx;
+                    const itemLex = lexicauxSaisis[lexIdx];
+                    if (itemLex && Number.isInteger(itemLex.rawIndex)) {
+                        return itemLex.rawIndex;
+                    }
+                    return lexIdx;
+                };
+                if (indexParIdCorpus) {
+                    const indexParIdMots = new Map();
+                    indexParIdCorpus.forEach((lexIdx, id) => {
+                        indexParIdMots.set(id, convertirLexicalVersRawIndex(lexIdx));
+                    });
+                    contexte.tokenIndexParId = indexParIdMots;
                 }
                 const avecIndexMot = (item) => {
                     if (!item) return item;
@@ -97,13 +112,16 @@
                             : null;
                     if (Number.isInteger(dejaIndexe)) return item;
                     const id = item.donnees ? Number(item.donnees.id) : NaN;
-                    if (indexParId && Number.isInteger(id) && indexParId.has(id)) {
-                        return { ...item, indexMot: indexParId.get(id) };
+                    if (contexte.tokenIndexParId && Number.isInteger(id) && contexte.tokenIndexParId.has(id)) {
+                        return { ...item, indexMot: contexte.tokenIndexParId.get(id) };
                     }
                     return item;
                 };
 
                 if (ctx.sujet) contexte.sujet = avecIndexMot(ctx.sujet);
+                if (Array.isArray(ctx.sujets) && ctx.sujets.length > 0) {
+                    contexte.sujets = ctx.sujets.map((s) => avecIndexMot(s)).filter(Boolean);
+                }
                 if (ctx.verbe) contexte.verbe = avecIndexMot(ctx.verbe);
                 if (ctx.nom) contexte.nom = avecIndexMot(ctx.nom);
                 if (ctx.determinat || ctx.determinant) {
@@ -114,29 +132,48 @@
                 if (ctx.adjectif) contexte.adjectif = avecIndexMot(ctx.adjectif);
                 if (ctx.participe) contexte.participe = avecIndexMot(ctx.participe);
                 // Pré-remplir nombreSujet et genreSujet depuis le corpus
-                // pour que la validation singulier/pluriel soit TOUJOURS basée
+                // pour que la validation singulier/pluriel et masculin/féminin soit TOUJOURS basée
                 // sur le corpus (source de vérité), jamais sur la saisie fautive.
-                if (ctx.sujet && ctx.sujet.donnees) {
-                    const nombreSrc = String(ctx.sujet.donnees.nombre || '').toLowerCase();
-                    if (nombreSrc === 'p' || nombreSrc === 'pluriel' || nombreSrc === 'pl') {
-                        contexte.nombreSujet = 'pluriel';
-                    } else if (nombreSrc) {
-                        contexte.nombreSujet = 'singulier';
+                const extraireNombreCorpus = (donnees) => {
+                    if (!donnees) return null;
+                    const n = String(donnees.nombre || '').toLowerCase();
+                    if (n === 'p' || n === 'pluriel' || n === 'pl') return 'pluriel';
+                    if (n === 's' || n === 'singulier' || n === 'sg') return 'singulier';
+                    return null;
+                };
+                const extraireGenreCorpus = (donnees) => {
+                    if (!donnees) return null;
+                    const g = String(donnees.genre || '').toLowerCase();
+                    if (g === 'f' || g === 'féminin' || g === 'feminin') return 'féminin';
+                    if (g === 'm' || g === 'masculin') return 'masculin';
+                    return null;
+                };
+                const sourcesDonnees = [
+                    ctx.sujet && ctx.sujet.donnees,
+                    ctx.nom && ctx.nom.donnees,
+                    (ctx.determinant && ctx.determinant.donnees) || (ctx.determinat && ctx.determinat.donnees),
+                    ctx.adjectif && ctx.adjectif.donnees
+                ].filter(Boolean);
+                for (const src of sourcesDonnees) {
+                    if (!contexte.nombreSujet) {
+                        const nb = extraireNombreCorpus(src);
+                        if (nb) contexte.nombreSujet = nb;
                     }
-                    const genreSrc = String(ctx.sujet.donnees.genre || '').toLowerCase();
-                    if (genreSrc === 'f' || genreSrc === 'féminin' || genreSrc === 'feminin') {
-                        contexte.genreSujet = 'féminin';
-                    } else if (genreSrc) {
-                        contexte.genreSujet = 'masculin';
+                    if (!contexte.genreSujet) {
+                        const gr = extraireGenreCorpus(src);
+                        if (gr) contexte.genreSujet = gr;
                     }
                 }
-                if (!contexte.nombreSujet && ctx.nom && ctx.nom.donnees) {
-                    const nombreSrc = String(ctx.nom.donnees.nombre || '').toLowerCase();
-                    if (nombreSrc === 'p' || nombreSrc === 'pluriel' || nombreSrc === 'pl') {
-                        contexte.nombreSujet = 'pluriel';
-                    } else if (nombreSrc) {
-                        contexte.nombreSujet = 'singulier';
-                    }
+                // Cas des sujets coordonnés (ex: "Paul et Marie chantent") :
+                // si plusieurs sujets gouvernent le verbe ou si le verbe cible est pluriel dans le corpus,
+                // le groupe sujet est pluriel.
+                if (
+                    (Array.isArray(contexte.sujets) && contexte.sujets.length > 1) ||
+                    (this.erreurActuelle.parcoursType === 'accord_sujet_verbe' &&
+                        ctx.verbe && ctx.verbe.donnees &&
+                        extraireNombreCorpus(ctx.verbe.donnees) === 'pluriel')
+                ) {
+                    contexte.nombreSujet = 'pluriel';
                 }
             }
 
@@ -385,8 +422,10 @@
 
                 const optionsContainer = document.createElement('div');
                 optionsContainer.className = 'options-container';
-                // Affiche tous les mots comme options
+                // Affiche tous les mots lexicaux comme options (en ignorant la ponctuation isolée)
                 this.motsAnalyse.forEach((mot, index) => {
+                    if (!mot || !mot.texte) return;
+                    if (/^[.,;:!?"«»()\[\]{}\-–—]+$/.test(String(mot.texte).trim())) return;
                     const btn = document.createElement('button');
                     btn.className = 'answer-option word-choice-tile';
                     btn.textContent = mot.texte;
@@ -679,6 +718,10 @@
                     if (question.cible === 'nom' && !this.contexteAide.nom) {
                         this.contexteAide.nom = motSelectionne;
                     }
+                    if ((question.cible === 'déterminant' || question.cible === 'determinant') && !this.contexteAide.determinant) {
+                        this.contexteAide.determinant = motSelectionne;
+                        this.contexteAide.determinat = motSelectionne;
+                    }
                     if (question.cible === 'adjectif' && !this.contexteAide.adjectif) {
                         this.contexteAide.adjectif = motSelectionne;
                     }
@@ -842,7 +885,8 @@
         formulerErreurEleve(erreur) {
             if (!erreur) return '';
 
-            switch (erreur.type) {
+            const typeEffectif = erreur.parcoursType || erreur.type;
+            switch (typeEffectif) {
                 case 'majuscule_phrase':
                     return 'Tu n\'avais pas mis de majuscule au premier mot de la phrase.';
                 case 'ponctuation_finale':
@@ -858,18 +902,25 @@
                 case 'accord_sujet_verbe':
                     return `Tu n\'avais pas accordé correctement le verbe "${erreur.mot}" avec son sujet.`;
                 case 'accord_determinant_nom':
-                    return `Tu n\'avais pas accordé correctement le déterminant avec le nom.`;
-                case 'accord_adjectif_nom':
-                    if (typeof erreur.explication === 'string' && erreur.explication.includes('adjectif attribut')) {
-                        return `Tu n\'avais pas accordé correctement l\'adjectif avec le sujet.`;
+                    if (erreur.cibleErreur === 'nom' || (erreur.contexteAccord && erreur.contexteAccord.cibleErreur === 'nom')) {
+                        return 'Tu n\'avais pas accordé correctement le nom avec son déterminant.';
                     }
-                    return `Tu n\'avais pas accordé correctement l\'adjectif avec le nom.`;
+                    return 'Tu n\'avais pas accordé correctement le déterminant avec le nom.';
+                case 'accord_adjectif_nom':
+                    if (erreur.cibleErreur === 'attribut' || erreur.titreAide === 'Accord sujet-attribut' || (typeof erreur.explication === 'string' && erreur.explication.includes('attribut'))) {
+                        return 'Tu n\'avais pas accordé correctement l\'adjectif attribut avec le sujet.';
+                    }
+                    return 'Tu n\'avais pas accordé correctement l\'adjectif avec le nom.';
                 case 'accord_nom_nombre':
                     return `Tu n\'avais pas écrit le nom au bon nombre après le déterminant.`;
                 case 'mot_invariable':
                 case 'invariable_s_fantome':
                 case 'mot_liaison_lexical':
                     return `Tu n\'avais pas écrit correctement ce mot invariable : "${erreur.mot}".`;
+                case 'oubli_lettre_interne':
+                    return `Il manquait une lettre dans le mot "${erreur.mot}".`;
+                case 'consonne_muette_finale':
+                    return `Tu avais oublié la consonne finale muette du mot "${erreur.mot}".`;
                 case 'locution_mal_segmentee':
                     return `Tu n'avais pas gardé la bonne découpe pour cette expression : "${erreur.mot}".`;
                 case 'oralite_familiere':
@@ -911,6 +962,8 @@
                 'accord_nom_nombre': 'Après le déterminant, vérifie si le nom doit être au singulier ou au pluriel avant de corriger.',
                 'mot_inconnu': 'Cherche des mots de la même famille pour trouver l\'orthographe correcte.',
                 'mot_invariable': 'Un mot invariable ne change jamais de forme: il faut mémoriser son orthographe exacte.',
+                'oubli_lettre_interne': 'Il manque une lettre dans ce mot : écoute à nouveau la dictée et corrige ton oubli.',
+                'consonne_muette_finale': 'Pour la retrouver, tu peux la plupart du temps chercher le féminin du mot ou un mot de la même famille.',
                 'invariable_s_fantome': 'Ce mot garde toujours son s final : il faut le voir comme une étiquette fixe.',
                 'mot_liaison_lexical': 'Ces mots relient les idées : retiens leur orthographe comme une forme toute prête.',
                 'locution_mal_segmentee': 'Quand une expression est figée, garde sa bonne découpe : espace, trait d’union ou apostrophe.',

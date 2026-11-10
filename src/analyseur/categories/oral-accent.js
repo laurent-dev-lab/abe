@@ -32,7 +32,7 @@
         else if (cedille) detailAccent = ' une cédille';
 
         return {
-            explication: `Les accents sont importants ! Le mot attendu s'écrit avec${detailAccent}, contrairement à « ${motSaisi} ». L'accent peut changer le sens du mot.`,
+            explication: `Les accents sont importants ! Le mot attendu s'écrit avec${detailAccent}. L'accent peut changer le sens du mot.`,
             titreAide: 'Accent ou cédille manquant(e)',
             memo: `L'accent change le sens ou la prononciation du mot.`
         };

@@ -85,11 +85,13 @@
                     const refMeta = referenceMeta[op.referenceIndex] || null;
                     const saisiMeta = saisisMeta[op.saisiIndex] || null;
                     if (!refMeta || !saisiMeta) return;
-                    if (!Number.isInteger(refMeta.indexMot) || !Number.isInteger(saisiMeta.indexMot)) return;
+                    const idxSaisiMots = Number.isInteger(saisiMeta.rawIndex) ? saisiMeta.rawIndex : saisiMeta.indexMot;
+                    if (!Number.isInteger(refMeta.indexMot) || !Number.isInteger(idxSaisiMots)) return;
 
-                    corpusVersSaisie.set(refMeta.indexMot, saisiMeta.indexMot);
-                    saisisMappes.add(saisiMeta.indexMot);
+                    corpusVersSaisie.set(refMeta.indexMot, idxSaisiMots);
                 });
+
+                let prochainSaisiIdx = 0;
 
                 for (let ci = 0; ci < corpusTokens.length; ci++) {
                     if (indicesOmis.has(ci)) {
@@ -121,10 +123,21 @@
                     const saisieIdx = corpusVersSaisie.get(ci);
 
                     if (Number.isInteger(saisieIdx) && saisieIdx >= 0) {
+                        while (prochainSaisiIdx < saisieIdx) {
+                            if (!saisisMappes.has(prochainSaisiIdx)) {
+                                const motInter = this.motsAnalyse[prochainSaisiIdx];
+                                if (motInter) {
+                                    creerTuileMot(motInter, prochainSaisiIdx);
+                                    saisisMappes.add(prochainSaisiIdx);
+                                }
+                            }
+                            prochainSaisiIdx += 1;
+                        }
                         const mot = this.motsAnalyse[saisieIdx];
                         if (mot) {
                             creerTuileMot(mot, saisieIdx);
                             saisisMappes.add(saisieIdx);
+                            prochainSaisiIdx = Math.max(prochainSaisiIdx, saisieIdx + 1);
                         }
                     }
                 }
